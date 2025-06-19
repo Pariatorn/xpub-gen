@@ -17,10 +17,16 @@ from .ui.input_handlers import (
     get_xpub_input, 
     get_derivation_count, 
     get_derivation_path,
+    get_starting_index,
     get_smart_random_confirmation
 )
 from .ui.output_handlers import save_addresses_to_txt, save_addresses_to_csv
-from .utils.state_manager import save_derivation_state, load_derivation_state
+from .utils.state_manager import (
+    save_derivation_state, 
+    load_derivation_state,
+    check_previous_state,
+    get_xpub_fingerprint
+)
 
 __all__ = [
     "derive_addresses",
@@ -32,9 +38,12 @@ __all__ = [
     "get_xpub_input",
     "get_derivation_count",
     "get_derivation_path",
+    "get_starting_index",
     "get_smart_random_confirmation",
     "save_addresses_to_txt",
     "save_addresses_to_csv",
     "save_derivation_state",
     "load_derivation_state",
+    "check_previous_state",
+    "get_xpub_fingerprint",
 ] 

@@ -3,6 +3,7 @@ State management for BSV address generator.
 Handles persistence of derivation state to avoid redundancies.
 """
 
+import hashlib
 import json
 import os
 
@@ -11,15 +12,24 @@ from config import DERIVATION_STATE_FILE
 
 def get_xpub_fingerprint(xpub_str):
     """
-    Generate a simple fingerprint for the xpub to track state.
+    Generate a stable fingerprint for the xpub to track state.
+    
+    Uses SHA-256 hash for consistent results across Python sessions,
+    unlike the built-in hash() function which is randomized for security.
     
     Args:
         xpub_str (str): Extended public key string
         
     Returns:
-        int: Simple hash-based fingerprint
+        int: Stable hash-based fingerprint (6 digits)
     """
-    return hash(xpub_str) % 1000000
+    # Create SHA-256 hash of the xpub string
+    sha256_hash = hashlib.sha256(xpub_str.encode('utf-8')).hexdigest()
+    
+    # Convert hex to integer and reduce modulo 1000000 for 6-digit fingerprint
+    fingerprint = int(sha256_hash, 16) % 1000000
+    
+    return fingerprint
 
 
 def save_derivation_state(xpub_fingerprint, last_index, base_path):
@@ -59,16 +69,25 @@ def load_derivation_state():
     return None
 
 
-def get_starting_index(xpub_str, base_path):
+def check_previous_state(xpub_str, base_path):
     """
-    Get the starting index for derivation, considering previous state.
+    Check if there's a previous derivation state for the given xpub and path.
+    
+    This function only checks for state existence without user interaction,
+    maintaining separation of concerns.
     
     Args:
         xpub_str (str): Extended public key string
         base_path (str): Base derivation path
         
     Returns:
-        int: Starting index for derivation
+        dict: Dictionary with state information or None if no matching state
+        Format: {
+            'exists': bool,
+            'last_index': int,
+            'fingerprint': int,
+            'can_continue': bool
+        }
     """
     state = load_derivation_state()
     xpub_fingerprint = get_xpub_fingerprint(xpub_str)
@@ -78,19 +97,19 @@ def get_starting_index(xpub_str, base_path):
         and state.get("xpub_fingerprint") == xpub_fingerprint
         and state.get("base_path") == base_path
     ):
-        last_index = state.get("last_index", 0)
-        print("\nFound previous derivation state.")
-        print(f"Last derived index was: {last_index}")
-        
-        choice = (
-            input("Do you want to continue from the last index? (y/n): ")
-            .strip()
-            .lower()
-        )
-        if choice == "y":
-            return last_index + 1
+        return {
+            'exists': True,
+            'last_index': state.get("last_index", 0),
+            'fingerprint': xpub_fingerprint,
+            'can_continue': True
+        }
     
-    return 0
+    return {
+        'exists': False,
+        'last_index': 0,
+        'fingerprint': xpub_fingerprint,
+        'can_continue': False
+    }
 
 
 def clear_derivation_state():

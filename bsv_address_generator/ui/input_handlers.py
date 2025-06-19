@@ -12,7 +12,38 @@ from config import (
     MAX_BSV_AMOUNT, 
     MAX_ADDRESSES_WARNING
 )
-from ..utils.state_manager import get_starting_index
+from ..utils.state_manager import check_previous_state
+
+
+def get_starting_index(xpub_str, base_path):
+    """
+    Get the starting index for derivation, with user interaction for continuing
+    from previous state.
+    
+    Args:
+        xpub_str (str): Extended public key string
+        base_path (str): Base derivation path
+        
+    Returns:
+        int: Starting index for derivation
+    """
+    state_info = check_previous_state(xpub_str, base_path)
+    
+    if state_info['can_continue']:
+        last_index = state_info['last_index']
+        print("\nFound previous derivation state.")
+        print(f"Last derived index was: {last_index}")
+        print(f"xpub fingerprint: {state_info['fingerprint']:06d}")
+        
+        choice = (
+            input("Do you want to continue from the last index? (y/n): ")
+            .strip()
+            .lower()
+        )
+        if choice == "y":
+            return last_index + 1
+    
+    return 0
 
 
 def get_xpub_input():

@@ -26,6 +26,7 @@ from bsv_address_generator.ui.input_handlers import (
     get_distribution_mode,
     get_random_distribution_params,
     get_smart_random_confirmation,
+    get_starting_index,
     get_xpub_input,
 )
 from bsv_address_generator.ui.output_handlers import (
@@ -39,7 +40,6 @@ from bsv_address_generator.ui.output_handlers import (
     save_addresses_to_csv,
     save_addresses_to_txt,
 )
-from bsv_address_generator.utils.state_manager import get_starting_index
 
 
 def main():
