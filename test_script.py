@@ -175,7 +175,7 @@ def test_with_new_private_key():
                         "address": child_address,
                         "private_key": "N/A (Xpub derivation only)",
                         "derivation_path": f"m/0/{i}",
-                        "note": f"Derived from master Xpub",
+                        "note": "Derived from master Xpub",
                     }
                 )
 
