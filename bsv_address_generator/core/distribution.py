@@ -406,3 +406,116 @@ def analyze_distribution_quality(amounts, min_bound, max_bound, total_amount):
         "distribution_accuracy": abs(sum(amounts) - total_amount)
         < Decimal("0.00000001"),
     }
+
+
+def create_address_batches(addresses, amounts, max_bsv_per_batch, randomize=False):
+    """
+    Split addresses and amounts into batches based on maximum BSV per batch.
+
+    Args:
+        addresses (list): List of address dictionaries
+        amounts (list): List of corresponding amounts
+        max_bsv_per_batch (Decimal): Maximum BSV amount per batch
+        randomize (bool): Whether to randomize order for privacy
+
+    Returns:
+        list: List of batch dictionaries with addresses, amounts, and metadata
+    """
+    import random
+    from decimal import Decimal
+
+    if len(addresses) != len(amounts):
+        raise ValueError("Addresses and amounts lists must have equal length")
+
+    # Combine addresses and amounts for easier processing
+    combined_data = list(zip(addresses, amounts))
+
+    # Randomize for privacy if requested
+    if randomize:
+        combined_data = combined_data.copy()
+        random.shuffle(combined_data)
+
+    batches = []
+    current_batch_addresses = []
+    current_batch_amounts = []
+    current_batch_total = Decimal("0")
+    batch_number = 1
+
+    for address, amount in combined_data:
+        # Check if adding this amount would exceed the limit
+        if (
+            current_batch_total + amount > max_bsv_per_batch
+            and len(current_batch_addresses) > 0
+        ):
+
+            # Save current batch
+            batches.append(
+                {
+                    "batch_number": batch_number,
+                    "addresses": current_batch_addresses.copy(),
+                    "amounts": current_batch_amounts.copy(),
+                    "total_amount": current_batch_total,
+                    "address_count": len(current_batch_addresses),
+                }
+            )
+
+            # Start new batch
+            current_batch_addresses = []
+            current_batch_amounts = []
+            current_batch_total = Decimal("0")
+            batch_number += 1
+
+        # Add to current batch
+        current_batch_addresses.append(address)
+        current_batch_amounts.append(amount)
+        current_batch_total += amount
+
+    # Add final batch if not empty
+    if current_batch_addresses:
+        batches.append(
+            {
+                "batch_number": batch_number,
+                "addresses": current_batch_addresses,
+                "amounts": current_batch_amounts,
+                "total_amount": current_batch_total,
+                "address_count": len(current_batch_addresses),
+            }
+        )
+
+    return batches
+
+
+def analyze_batch_distribution(batches, total_amount):
+    """
+    Analyze the batch distribution and provide statistics.
+
+    Args:
+        batches (list): List of batch dictionaries
+        total_amount (Decimal): Total amount being distributed
+
+    Returns:
+        dict: Distribution analysis statistics
+    """
+    from decimal import Decimal
+
+    if not batches:
+        return {}
+
+    batch_amounts = [batch["total_amount"] for batch in batches]
+    batch_counts = [batch["address_count"] for batch in batches]
+
+    analysis = {
+        "total_batches": len(batches),
+        "total_addresses": sum(batch_counts),
+        "total_amount_distributed": sum(batch_amounts),
+        "min_batch_amount": min(batch_amounts),
+        "max_batch_amount": max(batch_amounts),
+        "avg_batch_amount": sum(batch_amounts) / len(batches),
+        "min_addresses_per_batch": min(batch_counts),
+        "max_addresses_per_batch": max(batch_counts),
+        "avg_addresses_per_batch": sum(batch_counts) / len(batches),
+        "distribution_accuracy": abs(sum(batch_amounts) - total_amount)
+        < Decimal("0.00000001"),
+    }
+
+    return analysis

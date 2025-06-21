@@ -298,3 +298,145 @@ def display_distribution_preview(
         print("• Manual bounds (may cause distribution issues)")
 
     print("-" * 40)
+
+
+def display_batch_analysis(batch_analysis):
+    """
+    Display batch distribution analysis.
+
+    Args:
+        batch_analysis (dict): Batch analysis statistics
+    """
+    print("\n📊 Batch Distribution Analysis:")
+    print("-" * 50)
+    print(f"Total batches created: {batch_analysis['total_batches']}")
+    print(f"Total addresses: {batch_analysis['total_addresses']}")
+    print(f"Total amount distributed: {batch_analysis['total_amount_distributed']} BSV")
+    print()
+    print("Batch amount distribution:")
+    print(f"• Min batch amount: {batch_analysis['min_batch_amount']} BSV")
+    print(f"• Max batch amount: {batch_analysis['max_batch_amount']} BSV")
+    print(f"• Average batch amount: {batch_analysis['avg_batch_amount']:.8f} BSV")
+    print()
+    print("Addresses per batch:")
+    print(f"• Min addresses: {batch_analysis['min_addresses_per_batch']}")
+    print(f"• Max addresses: {batch_analysis['max_addresses_per_batch']}")
+    print(f"• Average addresses: {batch_analysis['avg_addresses_per_batch']:.1f}")
+
+    if batch_analysis["distribution_accuracy"]:
+        print("✅ Distribution accuracy: Perfect")
+    else:
+        print("⚠️  Minor rounding discrepancy detected")
+
+    print("-" * 50)
+
+
+def save_batch_files(batches, base_filename, distribution_mode, randomized=False):
+    """
+    Save batch files to a subdirectory.
+
+    Args:
+        batches (list): List of batch dictionaries
+        base_filename (str): Base filename (without extension)
+        distribution_mode (str): Distribution mode used
+        randomized (bool): Whether addresses were randomized
+
+    Returns:
+        tuple: (success: bool, subdirectory_path: str, saved_files: list)
+    """
+    import os
+    from datetime import datetime
+
+    if not batches:
+        return False, None, []
+
+    # Create subdirectory name
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    subdir_name = f"{base_filename}_batches_{timestamp}"
+
+    try:
+        # Create subdirectory
+        os.makedirs(subdir_name, exist_ok=True)
+
+        saved_files = []
+
+        # Create batch info file
+        info_filename = os.path.join(subdir_name, "batch_info.txt")
+        with open(info_filename, "w", encoding="utf-8") as f:
+            f.write("BSV Address Batch Processing Information\n")
+            f.write("=" * 50 + "\n")
+            f.write(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"Distribution mode: {distribution_mode}\n")
+            f.write(
+                f"Address randomization: {'Enabled' if randomized else 'Disabled'}\n"
+            )
+            f.write(f"Total batches: {len(batches)}\n")
+            f.write(
+                f"Total addresses: {sum(batch['address_count'] for batch in batches)}\n"
+            )
+            f.write(
+                f"Total amount: {sum(batch['total_amount'] for batch in batches)} BSV\n\n"
+            )
+
+            f.write("Batch Summary:\n")
+            f.write("-" * 30 + "\n")
+            for batch in batches:
+                f.write(f"Batch {batch['batch_number']:02d}: ")
+                f.write(f"{batch['address_count']} addresses, ")
+                f.write(f"{batch['total_amount']} BSV\n")
+
+        saved_files.append(info_filename)
+
+        # Save individual batch CSV files
+        for batch in batches:
+            batch_filename = os.path.join(
+                subdir_name,
+                f"batch_{batch['batch_number']:02d}_{batch['total_amount']:.8f}_BSV.csv",
+            )
+
+            with open(batch_filename, "w", encoding="utf-8") as f:
+                # Write address,amount pairs
+                for addr, amount in zip(batch["addresses"], batch["amounts"]):
+                    f.write(f"{addr['address']},{amount}\n")
+
+            saved_files.append(batch_filename)
+
+        return True, subdir_name, saved_files
+
+    except Exception as e:
+        print(f"Error creating batch files: {e}")
+        return False, None, []
+
+
+def display_batch_completion_message(success, subdir_path, saved_files, batch_count):
+    """
+    Display completion message for batch processing.
+
+    Args:
+        success (bool): Whether batch creation was successful
+        subdir_path (str): Path to the subdirectory
+        saved_files (list): List of saved file paths
+        batch_count (int): Number of batches created
+    """
+    if success:
+        print("\n✅ Batch Processing Complete!")
+        print(f"✓ Created {batch_count} batch files in subdirectory: {subdir_path}")
+        print("✓ Batch info file: batch_info.txt")
+        print(f"✓ Total files created: {len(saved_files)}")
+        print("\nBatch files are ready for independent processing!")
+
+        if batch_count > 10:
+            print(f"💡 Tip: Use 'ls {subdir_path}/' to view all batch files")
+    else:
+        print("\n❌ Batch processing failed!")
+        print("The main CSV file is still available.")
+
+
+def ask_batch_processing_after_csv():
+    """Ask if user wants to enable batch processing after CSV creation."""
+    return (
+        input("\nWould you like to split this CSV into multiple batch files? (y/n): ")
+        .strip()
+        .lower()
+        == "y"
+    )

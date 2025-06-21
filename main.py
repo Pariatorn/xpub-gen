@@ -15,22 +15,30 @@ import sys
 # Import our modular components
 from bsv_address_generator.core.derivation import derive_addresses
 from bsv_address_generator.core.distribution import (
+    analyze_batch_distribution,
+    create_address_batches,
     distribute_amounts_equal,
     distribute_amounts_random,
     distribute_amounts_random_optimal,
 )
 from bsv_address_generator.ui.input_handlers import (
+    ask_batch_processing,
+    get_batch_randomization_preference,
     get_bsv_amount,
     get_derivation_count,
     get_derivation_path,
     get_distribution_mode,
+    get_max_bsv_per_batch,
     get_random_distribution_params,
     get_smart_random_confirmation,
     get_starting_index,
     get_xpub_input,
 )
 from bsv_address_generator.ui.output_handlers import (
+    ask_batch_processing_after_csv,
     ask_csv_creation,
+    display_batch_analysis,
+    display_batch_completion_message,
     display_completion_message,
     display_distribution_preview,
     display_distribution_summary,
@@ -39,6 +47,7 @@ from bsv_address_generator.ui.output_handlers import (
     print_banner,
     save_addresses_to_csv,
     save_addresses_to_txt,
+    save_batch_files,
 )
 
 
@@ -149,9 +158,54 @@ def main():
 
                 # Save to CSV if amounts were generated
                 if amounts:
-                    save_addresses_to_csv(
+                    main_csv_filename = save_addresses_to_csv(
                         addresses, amounts, distribution_mode, distribution_info
                     )
+
+                    # Step 8: Batch processing (optional)
+                    if main_csv_filename and ask_batch_processing_after_csv():
+                        # Get batch processing parameters
+                        max_bsv_per_batch = get_max_bsv_per_batch()
+
+                        # Ask about randomization for privacy (only for random modes)
+                        randomize_batches = get_batch_randomization_preference(
+                            distribution_mode
+                        )
+
+                        # Create batches
+                        print("\n🔄 Creating batch files...")
+                        batches = create_address_batches(
+                            addresses, amounts, max_bsv_per_batch, randomize_batches
+                        )
+
+                        if batches:
+                            # Analyze batch distribution
+                            batch_analysis = analyze_batch_distribution(
+                                batches, total_amount
+                            )
+                            display_batch_analysis(batch_analysis)
+
+                            # Extract base filename from main CSV
+                            base_filename = (
+                                main_csv_filename.replace(".csv", "")
+                                if main_csv_filename.endswith(".csv")
+                                else main_csv_filename
+                            )
+
+                            # Save batch files
+                            success, subdir_path, saved_files = save_batch_files(
+                                batches,
+                                base_filename,
+                                distribution_mode,
+                                randomize_batches,
+                            )
+
+                            # Display completion message
+                            display_batch_completion_message(
+                                success, subdir_path, saved_files, len(batches)
+                            )
+                        else:
+                            print("❌ Failed to create batches.")
 
     except KeyboardInterrupt:
         print("\n\nOperation cancelled by user.")

@@ -364,6 +364,68 @@ def get_smart_random_confirmation(total_amount, address_count):
 
 
 def get_user_confirmation(message):
-    """Get yes/no confirmation from user."""
-    choice = input(f"{message} (y/n): ").strip().lower()
-    return choice == "y"
+    """Get user confirmation for a given message."""
+    return input(f"{message} (y/n): ").strip().lower() == "y"
+
+
+def ask_batch_processing():
+    """Ask if user wants to enable batch processing mode."""
+    print("\n🔄 Batch Processing Mode")
+    print(
+        "Split your addresses into multiple CSV files for enhanced privacy and security."
+    )
+    print("Benefits:")
+    print("• Enhanced privacy by distributing addresses across multiple files")
+    print("• Better operational security for large amounts")
+    print("• Easier file management and processing")
+    print("• Randomized splitting for additional privacy (in random modes)")
+
+    return get_user_confirmation("\nWould you like to enable batch processing mode?")
+
+
+def get_max_bsv_per_batch():
+    """Get the maximum BSV amount per batch file."""
+    while True:
+        try:
+            max_amount_str = input(
+                "\nEnter maximum BSV amount per batch file (e.g., 10.0): "
+            ).strip()
+
+            if not max_amount_str:
+                print("Error: Maximum amount cannot be empty.")
+                continue
+
+            max_amount = Decimal(max_amount_str)
+
+            if max_amount <= 0:
+                print("Error: Maximum amount must be greater than 0.")
+                continue
+
+            if max_amount > MAX_BSV_AMOUNT:
+                print(f"Error: Maximum amount cannot exceed {MAX_BSV_AMOUNT} BSV.")
+                continue
+
+            return max_amount
+
+        except ValueError:
+            print("Error: Please enter a valid decimal number.")
+
+
+def get_batch_randomization_preference(distribution_mode):
+    """
+    Ask user if they want to randomize batch splitting for privacy.
+    Only applies to random distribution modes.
+    """
+    if distribution_mode == "equal":
+        return False  # No randomization needed for equal distribution
+
+    print("\n🎲 Batch Randomization")
+    print(
+        "For enhanced privacy, addresses can be randomly shuffled before batch splitting."
+    )
+    print("This makes it harder to correlate addresses within the same batch.")
+    print("Note: This only affects the order of addresses, not the amounts.")
+
+    return get_user_confirmation(
+        "Would you like to randomize address order within batches?"
+    )
