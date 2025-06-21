@@ -1,1 +1,1 @@
-"""Core business logic for BSV address generation.""" 
+"""Core business logic for BSV address generation."""

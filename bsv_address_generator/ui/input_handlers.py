@@ -7,11 +7,12 @@ import os
 from decimal import Decimal
 
 from config import (
-    BSV_DUST_LIMIT, 
-    SATOSHIS_PER_BSV, 
-    MAX_BSV_AMOUNT, 
-    MAX_ADDRESSES_WARNING
+    BSV_DUST_LIMIT,
+    MAX_ADDRESSES_WARNING,
+    MAX_BSV_AMOUNT,
+    SATOSHIS_PER_BSV,
 )
+
 from ..utils.state_manager import check_previous_state
 
 
@@ -19,22 +20,22 @@ def get_starting_index(xpub_str, base_path):
     """
     Get the starting index for derivation, with user interaction for continuing
     from previous state.
-    
+
     Args:
         xpub_str (str): Extended public key string
         base_path (str): Base derivation path
-        
+
     Returns:
         int: Starting index for derivation
     """
     state_info = check_previous_state(xpub_str, base_path)
-    
-    if state_info['can_continue']:
-        last_index = state_info['last_index']
+
+    if state_info["can_continue"]:
+        last_index = state_info["last_index"]
         print("\nFound previous derivation state.")
         print(f"Last derived index was: {last_index}")
         print(f"xpub fingerprint: {state_info['fingerprint']:06d}")
-        
+
         choice = (
             input("Do you want to continue from the last index? (y/n): ")
             .strip()
@@ -42,7 +43,7 @@ def get_starting_index(xpub_str, base_path):
         )
         if choice == "y":
             return last_index + 1
-    
+
     return 0
 
 
@@ -227,10 +228,10 @@ def get_distribution_mode():
     print("1. Equal distribution (split amount equally)")
     print("2. Random distribution (specify min/max range)")
     print("3. 🤖 Smart random distribution (automatic optimal bounds)")
-    
+
     while True:
         choice = input("\nEnter your choice (1, 2, or 3): ").strip()
-        
+
         if choice == "1":
             return "equal"
         elif choice == "2":
@@ -244,20 +245,20 @@ def get_distribution_mode():
 def display_optimal_bounds_preview(total_amount, address_count):
     """
     Display preview of optimal bounds calculation.
-    
+
     Args:
         total_amount (Decimal): Total BSV amount
         address_count (int): Number of addresses
-        
+
     Returns:
         tuple: (min_amount, max_amount, distribution_info)
     """
     from ..core.distribution import calculate_optimal_random_bounds
-    
+
     min_amount, max_amount, distribution_info = calculate_optimal_random_bounds(
         total_amount, address_count
     )
-    
+
     print("\n🤖 Smart Random Distribution Analysis:")
     print("=" * 50)
     print(f"Average amount per address: {distribution_info['average_amount']} BSV")
@@ -267,7 +268,7 @@ def display_optimal_bounds_preview(total_amount, address_count):
     print(f"Min bound: {distribution_info['min_percent_of_avg']:.1f}% of average")
     print(f"Max bound: {distribution_info['max_percent_of_avg']:.1f}% of average")
     print("=" * 50)
-    
+
     return min_amount, max_amount, distribution_info
 
 
@@ -276,46 +277,46 @@ def get_random_distribution_params(total_amount, address_count):
     print(
         f"\nRandom distribution for {total_amount} BSV across {address_count} addresses"
     )
-    
+
     # Minimum amount (must be > BSV_DUST_LIMIT)
     min_dust_bsv = Decimal(BSV_DUST_LIMIT) / SATOSHIS_PER_BSV
-    
+
     while True:
         try:
             min_str = input(
                 f"Enter minimum amount per address (min: {min_dust_bsv} BSV): "
             ).strip()
             min_amount = Decimal(min_str)
-            
+
             min_sats = int(min_amount * SATOSHIS_PER_BSV)
             if min_sats <= BSV_DUST_LIMIT:
                 print(
                     f"Error: Minimum amount must be greater than {min_dust_bsv} BSV ({BSV_DUST_LIMIT} satoshis)."
                 )
                 continue
-                
+
             break
         except (ValueError, ArithmeticError):
             print("Error: Please enter a valid number.")
-    
+
     # Maximum amount (must be < total_amount)
     while True:
         try:
             max_str = input("Enter maximum amount per address (e.g., 0.1): ").strip()
             max_amount = Decimal(max_str)
-            
+
             if max_amount >= total_amount:
                 print(
                     f"Error: Maximum amount must be less than total amount ({total_amount} BSV)."
                 )
                 continue
-            
+
             if max_amount <= min_amount:
                 print(
                     f"Error: Maximum amount must be greater than minimum amount ({min_amount} BSV)."
                 )
                 continue
-                
+
             # Check if it's possible to distribute with these constraints
             min_total = min_amount * address_count
             if min_total > total_amount:
@@ -323,37 +324,39 @@ def get_random_distribution_params(total_amount, address_count):
                     f"Error: Minimum total ({min_total} BSV) exceeds available amount ({total_amount} BSV)."
                 )
                 continue
-                
+
             break
         except (ValueError, ArithmeticError):
             print("Error: Please enter a valid number.")
-    
+
     return min_amount, max_amount
 
 
 def get_smart_random_confirmation(total_amount, address_count):
     """
     Get confirmation for smart random distribution and show preview.
-    
+
     Args:
         total_amount (Decimal): Total BSV amount
         address_count (int): Number of addresses
-        
+
     Returns:
         tuple: (confirmed, min_amount, max_amount, distribution_info) or (False, None, None, None)
     """
     min_amount, max_amount, distribution_info = display_optimal_bounds_preview(
         total_amount, address_count
     )
-    
+
     print("\nThis smart distribution will:")
     print("✅ Ensure truly random amounts across all addresses")
-    print("✅ Prevent excessive remainder in the last address")  
+    print("✅ Prevent excessive remainder in the last address")
     print("✅ Maintain reasonable variation while respecting constraints")
     print("✅ Automatically handle dust limit compliance")
-    
-    confirmed = get_user_confirmation("Use these optimal bounds for random distribution?")
-    
+
+    confirmed = get_user_confirmation(
+        "Use these optimal bounds for random distribution?"
+    )
+
     if confirmed:
         return True, min_amount, max_amount, distribution_info
     else:
@@ -363,4 +366,4 @@ def get_smart_random_confirmation(total_amount, address_count):
 def get_user_confirmation(message):
     """Get yes/no confirmation from user."""
     choice = input(f"{message} (y/n): ").strip().lower()
-    return choice == "y" 
+    return choice == "y"

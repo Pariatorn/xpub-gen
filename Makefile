@@ -15,25 +15,25 @@ help:
 # Format code
 format:
 	@echo "🎨 Formatting code with black..."
-	./venv/bin/black *.py
+	./venv/bin/black . --exclude venv
 	@echo "📦 Sorting imports with isort..."
-	./venv/bin/isort *.py
+	./venv/bin/isort . --skip venv
 	@echo "✅ Formatting complete!"
 
 # Check formatting without making changes
 check:
 	@echo "🔍 Checking code format..."
-	./venv/bin/black --check --diff *.py
-	./venv/bin/isort --check-only --diff *.py
+	./venv/bin/black --check --diff . --exclude venv
+	./venv/bin/isort --check-only --diff . --skip venv
 
 # Run linters
 lint:
 	@echo "🔎 Running flake8..."
-	./venv/bin/flake8 *.py
+	./venv/bin/flake8 . --exclude=venv
 	@echo "🔍 Running pylint..."
-	./venv/bin/pylint *.py
+	./venv/bin/pylint **/*.py --ignore=venv
 	@echo "🎯 Running mypy..."
-	./venv/bin/mypy *.py
+	./venv/bin/mypy . --exclude venv
 	@echo "✅ Linting complete!"
 
 # Run tests

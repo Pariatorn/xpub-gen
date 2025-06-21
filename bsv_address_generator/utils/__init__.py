@@ -1,1 +1,1 @@
-"""Utility functions for BSV address generator.""" 
+"""Utility functions for BSV address generator."""

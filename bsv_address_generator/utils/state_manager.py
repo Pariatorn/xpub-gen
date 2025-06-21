@@ -13,29 +13,29 @@ from config import DERIVATION_STATE_FILE
 def get_xpub_fingerprint(xpub_str):
     """
     Generate a stable fingerprint for the xpub to track state.
-    
+
     Uses SHA-256 hash for consistent results across Python sessions,
     unlike the built-in hash() function which is randomized for security.
-    
+
     Args:
         xpub_str (str): Extended public key string
-        
+
     Returns:
         int: Stable hash-based fingerprint (6 digits)
     """
     # Create SHA-256 hash of the xpub string
-    sha256_hash = hashlib.sha256(xpub_str.encode('utf-8')).hexdigest()
-    
+    sha256_hash = hashlib.sha256(xpub_str.encode("utf-8")).hexdigest()
+
     # Convert hex to integer and reduce modulo 1000000 for 6-digit fingerprint
     fingerprint = int(sha256_hash, 16) % 1000000
-    
+
     return fingerprint
 
 
 def save_derivation_state(xpub_fingerprint, last_index, base_path):
     """
     Save the last derivation state to avoid redundancies.
-    
+
     Args:
         xpub_fingerprint (int): Fingerprint of the xpub
         last_index (int): Last derived index
@@ -56,7 +56,7 @@ def save_derivation_state(xpub_fingerprint, last_index, base_path):
 def load_derivation_state():
     """
     Load the last derivation state.
-    
+
     Returns:
         dict: Derivation state or None if not found/error
     """
@@ -72,14 +72,14 @@ def load_derivation_state():
 def check_previous_state(xpub_str, base_path):
     """
     Check if there's a previous derivation state for the given xpub and path.
-    
+
     This function only checks for state existence without user interaction,
     maintaining separation of concerns.
-    
+
     Args:
         xpub_str (str): Extended public key string
         base_path (str): Base derivation path
-        
+
     Returns:
         dict: Dictionary with state information or None if no matching state
         Format: {
@@ -91,24 +91,24 @@ def check_previous_state(xpub_str, base_path):
     """
     state = load_derivation_state()
     xpub_fingerprint = get_xpub_fingerprint(xpub_str)
-    
+
     if (
         state
         and state.get("xpub_fingerprint") == xpub_fingerprint
         and state.get("base_path") == base_path
     ):
         return {
-            'exists': True,
-            'last_index': state.get("last_index", 0),
-            'fingerprint': xpub_fingerprint,
-            'can_continue': True
+            "exists": True,
+            "last_index": state.get("last_index", 0),
+            "fingerprint": xpub_fingerprint,
+            "can_continue": True,
         }
-    
+
     return {
-        'exists': False,
-        'last_index': 0,
-        'fingerprint': xpub_fingerprint,
-        'can_continue': False
+        "exists": False,
+        "last_index": 0,
+        "fingerprint": xpub_fingerprint,
+        "can_continue": False,
     }
 
 
@@ -125,7 +125,7 @@ def clear_derivation_state():
 def get_state_info():
     """
     Get information about current derivation state.
-    
+
     Returns:
         dict: State information or None
     """
@@ -134,6 +134,6 @@ def get_state_info():
         return {
             "last_index": state.get("last_index", 0),
             "base_path": state.get("base_path", ""),
-            "xpub_fingerprint": state.get("xpub_fingerprint", 0)
+            "xpub_fingerprint": state.get("xpub_fingerprint", 0),
         }
-    return None 
+    return None

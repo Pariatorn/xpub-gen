@@ -8,23 +8,24 @@ try:
 except ImportError:
     raise ImportError("BSV SDK not found. Please install it using: pip install bsv-sdk")
 
-from config import MAX_DERIVATION_INDEX, DERIVATION_WARNING_THRESHOLD
-from ..utils.state_manager import save_derivation_state, get_xpub_fingerprint
+from config import DERIVATION_WARNING_THRESHOLD, MAX_DERIVATION_INDEX
+
+from ..utils.state_manager import get_xpub_fingerprint, save_derivation_state
 
 
 def validate_derivation_limits(start_index, count):
     """
     Validate that derivation won't exceed BIP32 limits.
-    
+
     Args:
         start_index (int): Starting derivation index
         count (int): Number of addresses to derive
-        
+
     Returns:
         bool: True if within limits, False otherwise
     """
     end_index = start_index + count - 1
-    
+
     if end_index > MAX_DERIVATION_INDEX:
         print("Error: Derivation limit exceeded!")
         print(f"Maximum derivation index: {MAX_DERIVATION_INDEX:,}")
@@ -33,7 +34,7 @@ def validate_derivation_limits(start_index, count):
             f"You can derive {MAX_DERIVATION_INDEX - start_index + 1:,} more addresses from index {start_index}"
         )
         return False
-    
+
     if end_index > MAX_DERIVATION_INDEX * DERIVATION_WARNING_THRESHOLD:
         print("Warning: Approaching derivation limit!")
         print(f"End index will be: {end_index:,}")
@@ -41,20 +42,20 @@ def validate_derivation_limits(start_index, count):
         confirm = input("Continue anyway? (y/n): ").strip().lower()
         if confirm != "y":
             return False
-    
+
     return True
 
 
 def derive_addresses(xpub_str, count, base_path, start_index=0):
     """
     Derive addresses from the extended public key.
-    
+
     Args:
         xpub_str (str): Extended public key string
         count (int): Number of addresses to derive
         base_path (str): Base derivation path
         start_index (int): Starting index for derivation
-        
+
     Returns:
         list: List of address dictionaries or None on error
     """
@@ -62,7 +63,7 @@ def derive_addresses(xpub_str, count, base_path, start_index=0):
         # Validate derivation limits before proceeding
         if not validate_derivation_limits(start_index, count):
             return None
-            
+
         # Create Xpub object
         xpub = Xpub(xpub_str)
         addresses = []
@@ -120,4 +121,4 @@ def derive_addresses(xpub_str, count, base_path, start_index=0):
     except Exception as e:
         print(f"\nError processing extended public key: {e}")
         print("Please check that your xpub is valid and properly formatted.")
-        return None 
+        return None
