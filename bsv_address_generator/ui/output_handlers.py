@@ -177,19 +177,6 @@ def save_addresses_to_csv(addresses, amounts, distribution_mode="random", distri
 
         try:
             with open(filename, "w", encoding="utf-8") as f:
-                # Write header comment (Electrum SV will ignore it)
-                f.write("# BSV Addresses with Amounts - Electrum SV Compatible\n")
-                f.write(
-                    f"# Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-                )
-                f.write(f"# Total addresses: {len(addresses)}\n")
-                f.write(f"# Total amount: {sum(amounts)} BSV\n")
-                f.write(f"# Distribution mode: {distribution_mode}\n")
-                
-                if distribution_info and distribution_mode == "smart_random":
-                    f.write(f"# Smart distribution bounds: {distribution_info.get('min_bound_used', 'N/A')} - {distribution_info.get('max_bound_used', 'N/A')} BSV\n")
-                    f.write(f"# Target variation: {distribution_info.get('variation_percent', 0):.1f}% of average\n")
-                
                 # Write address,amount pairs
                 for addr, amount in zip(addresses, amounts):
                     f.write(f"{addr['address']},{amount}\n")
