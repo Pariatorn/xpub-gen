@@ -208,11 +208,7 @@ def save_addresses_to_csv(
             filename = default_filename
 
         try:
-            with open(filename, "w", encoding="utf-8") as f:
-                # Write address,amount pairs
-                for addr, amount in zip(addresses, amounts):
-                    f.write(f"{addr['address']},{amount}\n")
-
+            _write_single_csv(filename, addresses, amounts)
             print(f"✓ CSV saved to: {filename}")
             print(f"✓ Total amount distributed: {sum(amounts)} BSV")
 
@@ -226,6 +222,19 @@ def save_addresses_to_csv(
             return None
 
     return None
+
+
+def _write_single_csv(file_path, addresses, amounts):
+    """
+    Internal function to write addresses and amounts to a CSV file.
+    Args:
+        file_path (str): The path to the CSV file.
+        addresses (list): List of address dictionaries.
+        amounts (list): List of amounts per address.
+    """
+    with open(file_path, "w", encoding="utf-8") as f:
+        for addr_info, amount in zip(addresses, amounts):
+            f.write(f"{addr_info['address']},{amount:.8f}\n")
 
 
 def display_success_message(address_count):
@@ -361,54 +370,71 @@ def save_batch_files(batches, base_filename, distribution_mode, randomized=False
         # Create subdirectory
         os.makedirs(subdir_name, exist_ok=True)
 
-        saved_files = []
-
-        # Create batch info file
-        info_filename = os.path.join(subdir_name, "batch_info.txt")
-        with open(info_filename, "w", encoding="utf-8") as f:
-            f.write("BSV Address Batch Processing Information\n")
-            f.write("=" * 50 + "\n")
-            f.write(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"Distribution mode: {distribution_mode}\n")
-            f.write(
-                f"Address randomization: {'Enabled' if randomized else 'Disabled'}\n"
-            )
-            f.write(f"Total batches: {len(batches)}\n")
-            f.write(
-                f"Total addresses: {sum(batch['address_count'] for batch in batches)}\n"
-            )
-            f.write(
-                f"Total amount: {sum(batch['total_amount'] for batch in batches)} BSV\n\n"
-            )
-
-            f.write("Batch Summary:\n")
-            f.write("-" * 30 + "\n")
-            for batch in batches:
-                f.write(f"Batch {batch['batch_number']:02d}: ")
-                f.write(f"{batch['address_count']} addresses, ")
-                f.write(f"{batch['total_amount']} BSV\n")
-
-        saved_files.append(info_filename)
-
-        # Save individual batch CSV files
-        for batch in batches:
-            batch_filename = os.path.join(
-                subdir_name,
-                f"batch_{batch['batch_number']:02d}_{batch['total_amount']:.8f}_BSV.csv",
-            )
-
-            with open(batch_filename, "w", encoding="utf-8") as f:
-                # Write address,amount pairs
-                for addr, amount in zip(batch["addresses"], batch["amounts"]):
-                    f.write(f"{addr['address']},{amount}\n")
-
-            saved_files.append(batch_filename)
+        saved_files = _write_batch_files(
+            subdir_name, batches, distribution_mode, randomized
+        )
 
         return True, subdir_name, saved_files
 
     except Exception as e:
         print(f"Error creating batch files: {e}")
         return False, None, []
+
+
+def _write_batch_files(
+    directory_path, batches, distribution_mode=None, randomized=None
+):
+    """
+    Internal function to write batch files to a directory.
+    Args:
+        directory_path (str): The path to the target directory.
+        batches (list): List of batch dictionaries.
+        distribution_mode (str, optional): Distribution mode used.
+        randomized (bool, optional): Whether addresses were randomized.
+    Returns:
+        list: List of saved file paths.
+    """
+    saved_files = []
+
+    # Create batch info file
+    info_filename = os.path.join(directory_path, "batch_info.txt")
+    with open(info_filename, "w", encoding="utf-8") as f:
+        f.write("BSV Address Batch Processing Information\n")
+        f.write("=" * 50 + "\n")
+        f.write(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        if distribution_mode:
+            f.write(f"Distribution mode: {distribution_mode}\n")
+        if randomized is not None:
+            f.write(
+                f"Address randomization: {'Enabled' if randomized else 'Disabled'}\n"
+            )
+        f.write(f"Total batches: {len(batches)}\n")
+        f.write(
+            f"Total addresses: {sum(batch['address_count'] for batch in batches)}\n"
+        )
+        total_amount = sum(batch["total_amount"] for batch in batches)
+        f.write(f"Total amount: {total_amount} BSV\n\n")
+
+        f.write("Batch Summary:\n")
+        f.write("-" * 30 + "\n")
+        for batch in batches:
+            f.write(f"Batch {batch['batch_number']:02d}: ")
+            f.write(f"{batch['address_count']} addresses, ")
+            f.write(f"{batch['total_amount']} BSV\n")
+    saved_files.append(info_filename)
+
+    # Save individual batch CSV files
+    for batch in batches:
+        batch_filename = os.path.join(
+            directory_path,
+            f"batch_{batch['batch_number']:02d}_{batch['total_amount']:.8f}_BSV.csv",
+        )
+        with open(batch_filename, "w", encoding="utf-8") as f:
+            for addr, amount in zip(batch["addresses"], batch["amounts"]):
+                f.write(f"{addr['address']},{amount:.8f}\n")
+        saved_files.append(batch_filename)
+
+    return saved_files
 
 
 def display_batch_completion_message(success, subdir_path, saved_files, batch_count):
@@ -485,10 +511,7 @@ def save_csv(parent, addresses, amounts):
 
     if file_path:
         try:
-            with open(file_path, "w") as f:
-                for addr_info, amount in zip(addresses, amounts):
-                    f.write(f"{addr_info['address']},{amount:.8f}\n")
-
+            _write_single_csv(file_path, addresses, amounts)
             QMessageBox.information(
                 parent, "Success", f"Addresses and amounts saved to {file_path}"
             )
@@ -518,11 +541,13 @@ def batch_export(parent, addresses, amounts):
         return
 
     try:
+        # Randomization is on by default for GUI batch export for privacy.
+        is_randomized = True
         batches = create_address_batches(
             addresses,
             amounts,
             Decimal(str(max_bsv_per_batch)),
-            randomize=True,
+            randomize=is_randomized,
         )
 
         if not batches:
@@ -535,36 +560,7 @@ def batch_export(parent, addresses, amounts):
         if not dir_path:
             return
 
-        # Create batch info file
-        info_filename = os.path.join(dir_path, "batch_info.txt")
-        with open(info_filename, "w", encoding="utf-8") as f:
-            f.write("BSV Address Batch Processing Information\n")
-            f.write("=" * 50 + "\n")
-            f.write(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"Total batches: {len(batches)}\n")
-            f.write(
-                f"Total addresses: {sum(batch['address_count'] for batch in batches)}\n"
-            )
-            f.write(
-                f"Total amount: {sum(batch['total_amount'] for batch in batches)} BSV\n\n"
-            )
-
-            f.write("Batch Summary:\n")
-            f.write("-" * 30 + "\n")
-            for batch in batches:
-                f.write(f"Batch {batch['batch_number']:02d}: ")
-                f.write(f"{batch['address_count']} addresses, ")
-                f.write(f"{batch['total_amount']} BSV\n")
-
-
-        for batch in batches:
-            batch_filename = os.path.join(
-                dir_path,
-                f"batch_{batch['batch_number']:02d}_{batch['total_amount']:.8f}_BSV.csv",
-            )
-            with open(batch_filename, "w") as f:
-                for addr_info, amount in zip(batch["addresses"], batch["amounts"]):
-                    f.write(f"{addr_info['address']},{amount:.8f}\n")
+        _write_batch_files(dir_path, batches, randomized=is_randomized)
 
         total_amount = sum(batch['total_amount'] for batch in batches)
         QMessageBox.information(
