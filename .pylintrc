@@ -1,0 +1,81 @@
+[MAIN]
+# A comma-separated list of plugin modules to load.
+load-plugins=
+    pylint.extensions.broad_try_clause,
+    pylint.extensions.check_elif,
+    pylint.extensions.code_style,
+    pylint.extensions.comparison_placement,
+    pylint.extensions.dict_init_mutate,
+    pylint.extensions.docparams,
+    pylint.extensions.dunder,
+    pylint.extensions.emptystring,
+    pylint.extensions.eq_without_hash,
+    pylint.extensions.for_any_all,
+    pylint.extensions.magic_value,
+    pylint.extensions.mccabe,
+    pylint.extensions.no_self_use,
+    pylint.extensions.overlapping_exceptions,
+    pylint.extensions.private_import,
+    pylint.extensions.redefined_loop_name,
+    pylint.extensions.redefined_outer_name,
+    pylint.extensions.typing,
+    pylint.extensions.while_used
+
+[MESSAGES CONTROL]
+# Disable the given messages.
+disable=
+    import-error,
+    invalid-name,
+    missing-class-docstring,
+    missing-function-docstring,
+    missing-module-docstring,
+    too-few-public-methods
+
+[REPORTS]
+# Set the output format. Available formats are text, parseable, colorized, json
+# and msvs. (Old format names: "old-text" and "old-parseable".)
+output-format=colorized
+
+# Don't show any messages with a score lower than the given value.
+confidence=HIGH
+
+# Display a score report.
+score=yes
+
+[TYPECHECK]
+# A comma-separated list of members that are ignored when checking for
+# similarity.
+ignored-classes=
+    optparse.Values,
+    thread._local,
+    argparse.Namespace
+
+# A comma-separated list of modules that are ignored from analysis when present
+# in an import statement.
+ignored-modules=
+
+[FORMAT]
+# The expected format for module level docstrings.
+module-docstring-rgx=
+
+# The maximum number of characters on a single line.
+max-line-length=88
+
+# The maximum number of lines in a module.
+max-module-lines=2000
+
+[BASIC]
+# A comma-separated list of names that should be considered as "good".
+good-names=
+    i,
+    j,
+    k,
+    ex,
+    Run,
+    _,
+    e,
+    f
+
+# A flag triggering the check of "except" clauses that do not raise an exception
+# or log a message.
+check-except-and-finally=no 

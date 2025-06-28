@@ -110,7 +110,10 @@ def get_xpub_from_file():
                 xpub = lines[0]
                 if len(lines) > 1:
                     print(
-                        f"Note: File contains multiple lines. Using first line: {xpub[:20]}..."
+                        (
+                            "Note: File contains multiple lines. "
+                            f"Using first line: {xpub[:20]}..."
+                        )
                     )
                 return xpub
             else:
@@ -147,7 +150,10 @@ def get_derivation_count():
             elif count > MAX_ADDRESSES_WARNING:
                 confirm = (
                     input(
-                        f"Warning: Generating {count} addresses. This might take a while. Continue? (y/n): "
+                        (
+                            f"Warning: Generating {count} addresses. "
+                            "This might take a while. Continue? (y/n): "
+                        )
                     )
                     .strip()
                     .lower()
@@ -214,7 +220,10 @@ def get_bsv_amount():
             if satoshis < BSV_DUST_LIMIT:
                 min_bsv = Decimal(BSV_DUST_LIMIT) / SATOSHIS_PER_BSV
                 print(
-                    f"Error: Amount too small. Minimum is {min_bsv} BSV ({BSV_DUST_LIMIT} satoshis)."
+                    (
+                        f"Error: Amount too small. Minimum is {min_bsv} BSV "
+                        f"({BSV_DUST_LIMIT} satoshis)."
+                    )
                 )
                 continue
 
@@ -293,7 +302,11 @@ def get_random_distribution_params(total_amount, address_count):
             min_sats = int(min_amount * SATOSHIS_PER_BSV)
             if min_sats <= BSV_DUST_LIMIT:
                 print(
-                    f"Error: Minimum amount must be greater than {min_dust_bsv} BSV ({BSV_DUST_LIMIT} satoshis)."
+                    (
+                        "Error: Minimum amount must be greater than "
+                        f"{min_dust_bsv} BSV "
+                        f"({BSV_DUST_LIMIT} satoshis)."
+                    )
                 )
                 continue
 
@@ -309,13 +322,19 @@ def get_random_distribution_params(total_amount, address_count):
 
             if max_amount >= total_amount:
                 print(
-                    f"Error: Maximum amount must be less than total amount ({total_amount} BSV)."
+                    (
+                        "Error: Maximum amount must be less than total amount "
+                        f"({total_amount} BSV)."
+                    )
                 )
                 continue
 
             if max_amount <= min_amount:
                 print(
-                    f"Error: Maximum amount must be greater than minimum amount ({min_amount} BSV)."
+                    (
+                        "Error: Maximum amount must be greater than minimum amount "
+                        f"({min_amount} BSV)."
+                    )
                 )
                 continue
 
@@ -323,7 +342,10 @@ def get_random_distribution_params(total_amount, address_count):
             min_total = min_amount * address_count
             if min_total > total_amount:
                 print(
-                    f"Error: Minimum total ({min_total} BSV) exceeds available amount ({total_amount} BSV)."
+                    (
+                        f"Error: Minimum total ({min_total} BSV) exceeds available "
+                        f"amount ({total_amount} BSV)."
+                    )
                 )
                 continue
 
@@ -343,7 +365,8 @@ def get_smart_random_confirmation(total_amount, address_count):
         address_count (int): Number of addresses
 
     Returns:
-        tuple: (confirmed, min_amount, max_amount, distribution_info) or (False, None, None, None)
+        tuple: (confirmed, min_amount, max_amount, distribution_info)
+            or (False, None, None, None)
     """
     min_amount, max_amount, distribution_info = display_optimal_bounds_preview(
         total_amount, address_count
@@ -374,7 +397,10 @@ def ask_batch_processing():
     """Ask if user wants to enable batch processing mode."""
     print("\n🔄 Batch Processing Mode")
     print(
-        "Split your addresses into multiple CSV files for enhanced privacy and security."
+        (
+            "Split your addresses into multiple CSV files for enhanced privacy and "
+            "security."
+        )
     )
     print("Benefits:")
     print("• Enhanced privacy by distributing addresses across multiple files")
@@ -423,7 +449,10 @@ def get_batch_randomization_preference(distribution_mode):
 
     print("\n🎲 Batch Randomization")
     print(
-        "For enhanced privacy, addresses can be randomly shuffled before batch splitting."
+        (
+            "For enhanced privacy, addresses can be randomly shuffled before "
+            "batch splitting."
+        )
     )
     print("This makes it harder to correlate addresses within the same batch.")
     print("Note: This only affects the order of addresses, not the amounts.")

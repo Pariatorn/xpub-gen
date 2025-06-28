@@ -50,7 +50,8 @@ def display_distribution_summary(
 
         if distribution_info:
             print(
-                f"✓ Target variation: {distribution_info.get('variation_percent', 0):.1f}% of average"
+                "✓ Target variation: "
+                f"{distribution_info.get('variation_percent', 0):.1f}% of average"
             )
 
             # Display quality metrics if available
@@ -62,7 +63,10 @@ def display_distribution_summary(
                 print(f"✓ Achieved variation: {actual_variation:.1f}% of average")
     else:  # regular random
         print(
-            f"\n✓ Random distribution between {min_amount} - {max_amount} BSV per address"
+            (
+                f"\n✓ Random distribution between {min_amount} - {max_amount} "
+                "BSV per address"
+            )
         )
 
     print("\nAmount distribution summary:")
@@ -132,7 +136,10 @@ def save_addresses_to_txt(addresses):
 
     save = (
         input(
-            f"\nWould you like to save these {len(addresses)} addresses to a file? (y/n): "
+            (
+                f"\nWould you like to save these {len(addresses)} addresses to a file? "
+                "(y/n): "
+            )
         )
         .strip()
         .lower()
@@ -192,7 +199,10 @@ def save_addresses_to_csv(
 
     save = (
         input(
-            f"\nWould you like to save these {len(addresses)} addresses with amounts to CSV (Electrum SV format)? (y/n): "
+            (
+                f"\nWould you like to save these {len(addresses)} addresses with "
+                "amounts to CSV (Electrum SV format)? (y/n): "
+            )
         )
         .strip()
         .lower()
@@ -300,11 +310,13 @@ def display_distribution_preview(
     elif distribution_mode == "smart_random":
         if distribution_info:
             print(
-                f"• Average amount per address: {distribution_info['average_amount']} BSV"
+                "• Average amount per address: "
+                f"{distribution_info['average_amount']} BSV"
             )
             print(f"• Random range: {min_amount} - {max_amount} BSV")
             print(
-                f"• Expected variation: {distribution_info['variation_percent']:.1f}% of average"
+                "• Expected variation: "
+                f"{distribution_info['variation_percent']:.1f}% of average"
             )
             print("• Smart bounds prevent excessive last address amounts")
     else:  # regular random
@@ -562,7 +574,7 @@ def batch_export(parent, addresses, amounts):
 
         _write_batch_files(dir_path, batches, randomized=is_randomized)
 
-        total_amount = sum(batch['total_amount'] for batch in batches)
+        total_amount = sum(batch["total_amount"] for batch in batches)
         QMessageBox.information(
             parent,
             "Batch Export Complete",

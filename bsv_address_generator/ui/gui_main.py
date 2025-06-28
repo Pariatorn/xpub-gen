@@ -3,36 +3,22 @@ BSV Address Generator - PyQt6 GUI Main Window
 A user-friendly graphical interface for the BSV address generator.
 """
 
-import os
 import sys
 from decimal import Decimal
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QApplication,
-    QComboBox,
-    QDoubleSpinBox,
     QFileDialog,
     QFrame,
-    QGridLayout,
-    QGroupBox,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
-    QLineEdit,
     QMainWindow,
     QMessageBox,
-    QProgressBar,
-    QPushButton,
-    QScrollArea,
-    QSpinBox,
     QSplitter,
-    QTableWidget,
     QTableWidgetItem,
-    QTabWidget,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -41,9 +27,7 @@ import bsv_address_generator.ui.input_handlers as input_handlers
 import bsv_address_generator.ui.output_handlers as output_handlers
 
 # Import core functionality
-from ..core.derivation import derive_addresses
 from ..core.distribution import (
-    create_address_batches,
     distribute_amounts_equal,
     distribute_amounts_random,
     distribute_amounts_random_optimal,
@@ -362,7 +346,11 @@ class BSVAddressGeneratorGUI(QMainWindow):
                 reply = QMessageBox.question(
                     self,
                     "Continue Previous Generation?",
-                    f"Found previous derivation state (last index: {state_info['last_index']}).\nContinue from where you left off?",
+                    (
+                        "Found previous derivation state (last index: "
+                        f"{state_info['last_index']}).\n"
+                        "Continue from where you left off?"
+                    ),
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 )
                 if reply == QMessageBox.StandardButton.Yes:

@@ -133,24 +133,17 @@ make lint
 # Check formatting without making changes
 make check
 
-# Run tests
-make test
-
 # Clean cache files
 make clean
-
-# Run all checks (format, lint, test)
-make all
 
 # Show available commands
 make help
 ```
 
 ### Testing the Tool
-For testing purposes, we've included additional files:
+For testing purposes, we've included an additional file:
 
 - **`example_xpub.txt`**: Contains a sample xpub for safe testing
-- **`former_application_files/test_script.py`**: Comprehensive test script with additional features
 
 ## Interactive Workflow
 

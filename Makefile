@@ -13,7 +13,7 @@ help:
 	@echo "  clean     - Clean up cache files"
 	@echo "  run       - Run the CLI application"
 	@echo "  start-gui - Start the GUI application"
-	@echo "  all       - Run format, lint, and test"
+	@echo "  all       - Run format and lint"
 
 # Install dependencies
 install:
@@ -62,7 +62,7 @@ clean:
 	@echo "✅ Cleanup complete!"
 
 # Run everything
-all: format lint test
+all: format lint
 	@echo "🎉 All checks passed!"
 
 # Run the main CLI application

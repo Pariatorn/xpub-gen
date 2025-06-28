@@ -31,7 +31,10 @@ def validate_derivation_limits(start_index, count):
         print(f"Maximum derivation index: {MAX_DERIVATION_INDEX:,}")
         print(f"Requested end index: {end_index:,}")
         print(
-            f"You can derive {MAX_DERIVATION_INDEX - start_index + 1:,} more addresses from index {start_index}"
+            (
+                f"You can derive {MAX_DERIVATION_INDEX - start_index + 1:,} "
+                f"more addresses from index {start_index}"
+            )
         )
         return False
 

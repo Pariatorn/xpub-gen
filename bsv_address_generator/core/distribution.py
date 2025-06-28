@@ -106,7 +106,10 @@ def _validate_and_adjust_bounds(
         # Use this conservative max, but ensure it's not too restrictive
         max_amount = min(max_amount, conservative_max * Decimal("1.3"))  # 30% buffer
         print(
-            f"ℹ️  Adjusted maximum amount to {max_amount} BSV to prevent excessive last address"
+            (
+                f"ℹ️  Adjusted maximum amount to {max_amount} BSV to prevent excessive "
+                "last address"
+            )
         )
 
     # Ensure we still have enough room for minimum amounts
@@ -130,7 +133,10 @@ def _validate_and_adjust_bounds(
         min_amount = max(min_amount, dust_limit_bsv * Decimal("1.1"))
 
         print(
-            f"ℹ️  Created balanced range around average: {min_amount} - {max_amount} BSV"
+            (
+                f"ℹ️  Created balanced range around average: {min_amount} - "
+                f"{max_amount} BSV"
+            )
         )
 
     return min_amount, max_amount
@@ -347,7 +353,21 @@ def validate_distribution_params(total_amount, address_count, min_amount, max_am
     if min_total > total_amount:
         return (
             False,
-            f"Minimum total ({min_total} BSV) exceeds available amount ({total_amount} BSV).",
+            (
+                f"Minimum total ({min_total} BSV) exceeds total amount "
+                f"({total_amount} BSV)."
+            ),
+        )
+
+    # Check if maximum total is less than available amount
+    max_total = max_amount * address_count
+    if max_total < total_amount:
+        return (
+            False,
+            (
+                f"Maximum total ({max_total} BSV) is less than total amount "
+                f"({total_amount} BSV)."
+            ),
         )
 
     # Check dust limit
@@ -356,10 +376,13 @@ def validate_distribution_params(total_amount, address_count, min_amount, max_am
         min_dust_bsv = Decimal(BSV_DUST_LIMIT) / SATOSHIS_PER_BSV
         return (
             False,
-            f"Minimum amount must be greater than {min_dust_bsv} BSV ({BSV_DUST_LIMIT} satoshis).",
+            (
+                f"Minimum amount must be greater than {min_dust_bsv} BSV "
+                f"({BSV_DUST_LIMIT} satoshis)."
+            ),
         )
 
-    return True, ""
+    return True, None
 
 
 def analyze_distribution_quality(amounts, min_bound, max_bound, total_amount):

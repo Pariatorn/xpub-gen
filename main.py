@@ -10,8 +10,6 @@ Usage:
     python main_refactored.py
 """
 
-import sys
-
 # Import our modular components
 from bsv_address_generator.core.derivation import derive_addresses
 from bsv_address_generator.core.distribution import (
@@ -22,7 +20,6 @@ from bsv_address_generator.core.distribution import (
     distribute_amounts_random_optimal,
 )
 from bsv_address_generator.ui.input_handlers import (
-    ask_batch_processing,
     get_batch_randomization_preference,
     get_bsv_amount,
     get_derivation_count,
@@ -122,7 +119,10 @@ def main():
                         )
                     else:
                         print(
-                            "Smart distribution cancelled. Falling back to manual random distribution."
+                            (
+                                "Smart distribution cancelled. "
+                                "Falling back to manual random distribution."
+                            )
                         )
                         min_amount, max_amount = get_random_distribution_params(
                             total_amount, len(addresses)
