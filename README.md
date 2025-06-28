@@ -2,6 +2,21 @@
 
 A comprehensive Python tool to derive BSV (Bitcoin SV) addresses from extended public keys (xpub) with advanced amount distribution and batch processing capabilities.
 
+## 🎯 New GUI Interface Available!
+
+The BSV Address Generator now includes a **user-friendly PyQt6 GUI** that makes address generation accessible to all users. Choose between:
+
+- **🖥️ GUI Mode**: Intuitive graphical interface for easy use
+- **⌨️ CLI Mode**: Command-line interface for advanced users and automation
+
+### Quick Start - GUI Mode
+```bash
+make install      # Install all dependencies including PyQt6
+make start-gui    # Launch the graphical interface
+```
+
+📖 **[Complete GUI Usage Guide](GUI_USAGE_GUIDE.md)** - Detailed instructions for the graphical interface
+
 ## Features
 
 - 🔐 **Secure Address Derivation**: Generate BSV addresses from extended public keys without exposing private keys
@@ -13,7 +28,7 @@ A comprehensive Python tool to derive BSV (Bitcoin SV) addresses from extended p
 - 🎯 **Batch Generation**: Generate multiple addresses at once (1-1000+ addresses)
 - 🎲 **Smart Randomization**: Advanced algorithms for optimal amount distribution
 - ✅ **Input Validation**: Built-in validation for extended public keys and amounts
-- 🖥️ **CLI Interface**: Easy-to-use command-line interface with guided prompts
+- 🖥️ **Dual Interface**: Both GUI and CLI interfaces available
 - 🔧 **Development Tools**: Integrated linting, formatting, and testing via Makefile
 
 ## Prerequisites
@@ -43,29 +58,65 @@ source venv/bin/activate
 ```
 
 ### 3. Install Dependencies
+
+**Automated Installation (Recommended):**
 ```bash
+make install
+```
+
+**Manual Installation:**
+```bash
+# Core dependencies
 pip install bsv-sdk
+
+# For GUI interface
+pip install PyQt6
+
+# For development (optional)
+pip install black isort flake8 pylint mypy
 ```
 
 ## Usage
 
-### Running the Tool
+### Choose Your Interface
 
-You can run the tool in multiple ways:
-
-**Option 1: Direct Python execution**
+#### 🖥️ GUI Mode (Recommended for new users)
 ```bash
-python main.py
+make start-gui
 ```
+- User-friendly graphical interface
+- Visual feedback and validation
+- Easy file loading and saving
+- Real-time preview functionality
+- Perfect for occasional users
 
-**Option 2: Using Makefile (recommended)**
+#### ⌨️ CLI Mode (Recommended for automation)
 ```bash
 make run
 ```
+- Command-line interface with guided prompts
+- Scriptable and automatable
+- Faster for experienced users
+- Better for batch operations
 
-**Option 3: Using the virtual environment directly**
+### Alternative Running Methods
+
+**Direct Python execution:**
 ```bash
+# CLI mode
+python main.py
+
+# GUI mode
+python gui.py
+```
+
+**Using virtual environment directly:**
+```bash
+# CLI mode
 ./venv/bin/python main.py
+
+# GUI mode  
+./venv/bin/python gui.py
 ```
 
 ### Development Tools

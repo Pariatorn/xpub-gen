@@ -1,16 +1,27 @@
 # BSV Address Generator - Development Tools
 
-.PHONY: help format lint check test clean all
+.PHONY: help install format lint check test clean all run start-gui
 
 # Default target
 help:
 	@echo "Available commands:"
+	@echo "  install   - Install dependencies in virtual environment"
 	@echo "  format    - Format code with black and isort"
 	@echo "  lint      - Run all linters (flake8, pylint, mypy)"
 	@echo "  check     - Run format check without making changes"
 	@echo "  test      - Run the test script"
 	@echo "  clean     - Clean up cache files"
+	@echo "  run       - Run the CLI application"
+	@echo "  start-gui - Start the GUI application"
 	@echo "  all       - Run format, lint, and test"
+
+# Install dependencies
+install:
+	@echo "🔧 Setting up virtual environment and installing dependencies..."
+	python3 -m venv venv
+	./venv/bin/pip install --upgrade pip
+	./venv/bin/pip install -r requirements.txt
+	@echo "✅ Installation complete! Use 'make run' for CLI or 'make start-gui' for GUI"
 
 # Format code
 format:
@@ -54,7 +65,12 @@ clean:
 all: format lint test
 	@echo "🎉 All checks passed!"
 
-# Run the main application
+# Run the main CLI application
 run:
-	@echo "🚀 Running BSV Address Generator..."
-	./venv/bin/python main.py 
+	@echo "🚀 Running BSV Address Generator (CLI)..."
+	./venv/bin/python main.py
+
+# Start the GUI application
+start-gui:
+	@echo "🖥️ Starting BSV Address Generator GUI..."
+	./venv/bin/python gui.py 
