@@ -8,7 +8,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QIcon
 from PyQt6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -454,8 +454,15 @@ class BSVAddressGeneratorGUI(QMainWindow):
 
 
 def main():
-    """Main function to run the GUI application."""
+    """Main function to run the application."""
     app = QApplication(sys.argv)
+    
+    # Set application icon
+    # Create an assets directory in the project root and place your icon file there.
+    icon_path = Path(__file__).parent.parent.parent / "assets/app_icon.png"
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
+
     app.setApplicationName("BSV Address Generator")
     app.setOrganizationName("BSV Tools")
 
@@ -464,6 +471,7 @@ def main():
 
     # Create and show main window
     window = BSVAddressGeneratorGUI()
+    window.load_example_xpub()
     window.show()
 
     sys.exit(app.exec())
