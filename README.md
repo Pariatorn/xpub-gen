@@ -145,6 +145,46 @@ For testing purposes, we've included an additional file:
 
 - **`example_xpub.txt`**: Contains a sample xpub for safe testing
 
+## 📦 Distributing the Application
+
+You can create a standalone, single-file executable from this project using **PyInstaller**. This bundles the application and all its dependencies into one file, making it easy to share.
+
+### 1. Install Dependencies
+First, ensure you have all project dependencies, including `pyinstaller`, installed:
+```bash
+make install
+```
+
+### 2. Building for Your Current Platform
+
+To create an executable for your current operating system (e.g., Linux), run the following command:
+```bash
+make build
+```
+This command will:
+- Bundle the entire application into a single file.
+- Use the `assets/app_icon.png` as the application icon.
+- Place the final executable in a new `dist/` directory.
+
+The resulting file (`dist/BSV_Address_Generator`) can be run on any compatible Linux distribution without needing Python or any dependencies installed.
+
+### 3. Building for Windows (Cross-Platform)
+
+**Important**: You cannot create a Windows `.exe` file from a Linux or macOS environment. You must run the build process on a Windows machine.
+
+To build for Windows:
+1.  Clone this repository onto a Windows machine.
+2.  Follow the **Installation** steps in this README to set up Python and the virtual environment.
+3.  Run the same build command on Windows (in `cmd` or `PowerShell`):
+    ```powershell
+    # First, activate the virtual environment if you haven't
+    .\venv\Scripts\activate
+
+    # Then, run the build command
+    pyinstaller --name "BSV_Address_Generator" --onefile --windowed --icon="assets/app_icon.png" --add-data="assets;assets" gui.py
+    ```
+This will create a `BSV_Address_Generator.exe` file inside the `dist/` directory, which can be run on other Windows machines. Note the use of a semicolon (`;`) in the `--add-data` path for Windows compatibility.
+
 ## Interactive Workflow
 
 The tool guides you through a comprehensive process:

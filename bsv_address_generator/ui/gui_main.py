@@ -25,6 +25,7 @@ from PyQt6.QtWidgets import (
 
 import bsv_address_generator.ui.input_handlers as input_handlers
 import bsv_address_generator.ui.output_handlers as output_handlers
+from config import APP_VERSION
 
 # Import core functionality
 from ..core.distribution import (
@@ -53,7 +54,7 @@ class BSVAddressGeneratorGUI(QMainWindow):
 
     def init_ui(self):
         """Initialize the user interface."""
-        self.setWindowTitle("BSV Address Generator")
+        self.setWindowTitle(f"BSV Address Generator v{APP_VERSION}")
         self.setMinimumSize(800, 600)
         self.resize(1200, 800)
 
@@ -456,7 +457,7 @@ class BSVAddressGeneratorGUI(QMainWindow):
 def main():
     """Main function to run the application."""
     app = QApplication(sys.argv)
-    
+
     # Set application icon
     # Create an assets directory in the project root and place your icon file there.
     icon_path = Path(__file__).parent.parent.parent / "assets/app_icon.png"

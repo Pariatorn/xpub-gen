@@ -195,3 +195,9 @@ cython_debug/
 
 # Config json
 derivation_state.json
+
+# State files
+*.json
+
+# New .bin/ directory
+.bin/
