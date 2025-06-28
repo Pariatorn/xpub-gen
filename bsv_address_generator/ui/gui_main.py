@@ -8,11 +8,10 @@ import sys
 from decimal import Decimal
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor, QFont, QIcon, QPalette
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QApplication,
-    QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QFileDialog,
@@ -41,7 +40,6 @@ from PyQt6.QtWidgets import (
 # Import core functionality
 from ..core.derivation import derive_addresses
 from ..core.distribution import (
-    analyze_batch_distribution,
     create_address_batches,
     distribute_amounts_equal,
     distribute_amounts_random,
@@ -89,7 +87,6 @@ class BSVAddressGeneratorGUI(QMainWindow):
 
         self.init_ui()
         self.setup_connections()
-        self.load_example_xpub()
 
     def init_ui(self):
         """Initialize the user interface."""
