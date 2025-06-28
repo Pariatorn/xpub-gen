@@ -6,6 +6,8 @@ Handles all user input validation and processing.
 import os
 from decimal import Decimal
 
+from PyQt6.QtWidgets import QMessageBox
+
 from config import (
     BSV_DUST_LIMIT,
     MAX_ADDRESSES_WARNING,
@@ -429,3 +431,45 @@ def get_batch_randomization_preference(distribution_mode):
     return get_user_confirmation(
         "Would you like to randomize address order within batches?"
     )
+
+
+def validate_inputs(parent, input_panel):
+    """Validate all input fields."""
+    xpub = input_panel.xpub_input.toPlainText().strip()
+    if not xpub:
+        QMessageBox.warning(
+            parent, "Validation Error", "Please enter an extended public key."
+        )
+        return False
+
+    if not xpub.startswith(("xpub", "tpub")):
+        reply = QMessageBox.question(
+            parent,
+            "Warning",
+            "This doesn't look like a standard extended public key. Continue anyway?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if reply == QMessageBox.StandardButton.No:
+            return False
+
+    if input_panel.path_combo.currentText() == "Custom path":
+        custom_path = input_panel.custom_path_input.text().strip()
+        if not custom_path:
+            QMessageBox.warning(
+                parent, "Validation Error", "Please enter a custom derivation path."
+            )
+            return False
+
+    if input_panel.dist_mode.currentText() == "Random distribution":
+        min_val = input_panel.min_amount.value()
+        max_val = input_panel.max_amount.value()
+
+        if min_val >= max_val:
+            QMessageBox.warning(
+                parent,
+                "Validation Error",
+                "Minimum amount must be less than maximum amount.",
+            )
+            return False
+
+    return True

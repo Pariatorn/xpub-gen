@@ -3,7 +3,13 @@ Output handlers for BSV address generator.
 Handles display formatting and file operations.
 """
 
+import os
 from datetime import datetime
+from decimal import Decimal
+
+from PyQt6.QtWidgets import QFileDialog, QInputDialog, QMessageBox
+
+from ..core.distribution import create_address_batches
 
 
 def print_banner():
@@ -344,9 +350,6 @@ def save_batch_files(batches, base_filename, distribution_mode, randomized=False
     Returns:
         tuple: (success: bool, subdirectory_path: str, saved_files: list)
     """
-    import os
-    from datetime import datetime
-
     if not batches:
         return False, None, []
 
@@ -440,3 +443,115 @@ def ask_batch_processing_after_csv():
         .lower()
         == "y"
     )
+
+
+def save_txt(parent, addresses):
+    """Save addresses to TXT file."""
+    if not addresses:
+        QMessageBox.warning(parent, "No Data", "Please generate addresses first.")
+        return
+
+    file_path, _ = QFileDialog.getSaveFileName(
+        parent, "Save Addresses (TXT)", "addresses.txt", "Text files (*.txt)"
+    )
+
+    if file_path:
+        try:
+            with open(file_path, "w") as f:
+                for addr_info in addresses:
+                    f.write(f"{addr_info['address']}\n")
+
+            QMessageBox.information(
+                parent, "Success", f"Addresses saved to {file_path}"
+            )
+        except Exception as e:
+            QMessageBox.critical(parent, "Save Error", f"Failed to save file: {str(e)}")
+
+
+def save_csv(parent, addresses, amounts):
+    """Save addresses with amounts to CSV file."""
+    if not addresses or not amounts:
+        QMessageBox.warning(
+            parent, "No Data", "Please generate addresses with distribution first."
+        )
+        return
+
+    file_path, _ = QFileDialog.getSaveFileName(
+        parent,
+        "Save Addresses & Amounts (CSV)",
+        "addresses_amounts.csv",
+        "CSV files (*.csv)",
+    )
+
+    if file_path:
+        try:
+            with open(file_path, "w") as f:
+                f.write("address,amount\n")
+                for addr_info, amount in zip(addresses, amounts):
+                    f.write(f"{addr_info['address']},{amount:.8f}\n")
+
+            QMessageBox.information(
+                parent, "Success", f"Addresses and amounts saved to {file_path}"
+            )
+        except Exception as e:
+            QMessageBox.critical(parent, "Save Error", f"Failed to save file: {str(e)}")
+
+
+def batch_export(parent, addresses, amounts):
+    """Export addresses in batches."""
+    if not addresses or not amounts:
+        QMessageBox.warning(
+            parent, "No Data", "Please generate addresses with distribution first."
+        )
+        return
+
+    max_bsv_per_batch, ok = QInputDialog.getDouble(
+        parent,
+        "Batch Export",
+        "Maximum BSV per batch file:",
+        value=10.0,
+        min=0.1,
+        max=100000.0,
+        decimals=8,
+    )
+
+    if not ok:
+        return
+
+    try:
+        batches = create_address_batches(
+            addresses,
+            amounts,
+            Decimal(str(max_bsv_per_batch)),
+            randomize=True,
+        )
+
+        if not batches:
+            QMessageBox.warning(parent, "Batch Error", "Failed to create batches.")
+            return
+
+        dir_path = QFileDialog.getExistingDirectory(
+            parent, "Choose Directory for Batch Files"
+        )
+        if not dir_path:
+            return
+
+        for i, batch in enumerate(batches):
+            batch_file = os.path.join(dir_path, f"batch_{i + 1:03d}.csv")
+            with open(batch_file, "w") as f:
+                f.write("address,amount\n")
+                for addr_info, amount in zip(batch["addresses"], batch["amounts"]):
+                    f.write(f"{addr_info['address']},{amount:.8f}\n")
+
+        total_amount = sum(sum(batch["amounts"]) for batch in batches)
+        QMessageBox.information(
+            parent,
+            "Batch Export Complete",
+            f"Created {len(batches)} batch files in {dir_path}\n"
+            f"Total amount distributed: {total_amount:.8f} BSV",
+        )
+
+    except Exception as e:
+        QMessageBox.critical(
+            parent, "Batch Export Error", f"Failed to create batches: {str(e)}"
+        )
