@@ -486,7 +486,6 @@ def save_csv(parent, addresses, amounts):
     if file_path:
         try:
             with open(file_path, "w") as f:
-                f.write("address,amount\n")
                 for addr_info, amount in zip(addresses, amounts):
                     f.write(f"{addr_info['address']},{amount:.8f}\n")
 
@@ -536,14 +535,38 @@ def batch_export(parent, addresses, amounts):
         if not dir_path:
             return
 
-        for i, batch in enumerate(batches):
-            batch_file = os.path.join(dir_path, f"batch_{i + 1:03d}.csv")
-            with open(batch_file, "w") as f:
-                f.write("address,amount\n")
+        # Create batch info file
+        info_filename = os.path.join(dir_path, "batch_info.txt")
+        with open(info_filename, "w", encoding="utf-8") as f:
+            f.write("BSV Address Batch Processing Information\n")
+            f.write("=" * 50 + "\n")
+            f.write(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"Total batches: {len(batches)}\n")
+            f.write(
+                f"Total addresses: {sum(batch['address_count'] for batch in batches)}\n"
+            )
+            f.write(
+                f"Total amount: {sum(batch['total_amount'] for batch in batches)} BSV\n\n"
+            )
+
+            f.write("Batch Summary:\n")
+            f.write("-" * 30 + "\n")
+            for batch in batches:
+                f.write(f"Batch {batch['batch_number']:02d}: ")
+                f.write(f"{batch['address_count']} addresses, ")
+                f.write(f"{batch['total_amount']} BSV\n")
+
+
+        for batch in batches:
+            batch_filename = os.path.join(
+                dir_path,
+                f"batch_{batch['batch_number']:02d}_{batch['total_amount']:.8f}_BSV.csv",
+            )
+            with open(batch_filename, "w") as f:
                 for addr_info, amount in zip(batch["addresses"], batch["amounts"]):
                     f.write(f"{addr_info['address']},{amount:.8f}\n")
 
-        total_amount = sum(sum(batch["amounts"]) for batch in batches)
+        total_amount = sum(batch['total_amount'] for batch in batches)
         QMessageBox.information(
             parent,
             "Batch Export Complete",
