@@ -181,7 +181,7 @@ To build for Windows:
     .\venv\Scripts\activate
 
     # Then, run the build command
-    pyinstaller --name "BSV_Address_Generator" --onefile --windowed --icon="assets/app_icon.png" --add-data="assets;assets" gui.py
+    pyinstaller --name "BSV_Address_Generator" --onefile --windowed --additional-hooks-dir=./hooks --icon="assets/app_icon.ico" --add-data="assets;assets" gui.py
     ```
 This will create a `BSV_Address_Generator.exe` file inside the `dist/` directory, which can be run on other Windows machines. Note the use of a semicolon (`;`) in the `--add-data` path for Windows compatibility.
 
