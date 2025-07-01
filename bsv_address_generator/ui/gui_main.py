@@ -25,7 +25,7 @@ from PyQt6.QtWidgets import (
 
 import bsv_address_generator.ui.input_handlers as input_handlers
 import bsv_address_generator.ui.output_handlers as output_handlers
-from config import APP_VERSION
+from config import APP_VERSION, BSV_DUST_LIMIT, SATOSHIS_PER_BSV
 
 # Import core functionality
 from ..core.distribution import (
@@ -247,8 +247,8 @@ class BSVAddressGeneratorGUI(QMainWindow):
                 min_val = float(avg * Decimal("0.1"))  # 10% of average
                 max_val = float(avg * Decimal("2.0"))  # 200% of average
 
-                # Ensure minimum is above dust limit
-                dust_limit_bsv = 0.00000546  # 546 satoshis in BSV
+                # Ensure minimum is above dust limit (using config value)
+                dust_limit_bsv = float(Decimal(BSV_DUST_LIMIT) / SATOSHIS_PER_BSV * Decimal("1.1"))  # dust limit + 10% buffer
                 min_val = max(min_val, dust_limit_bsv)
 
                 self.input_panel.min_amount.setValue(min_val)

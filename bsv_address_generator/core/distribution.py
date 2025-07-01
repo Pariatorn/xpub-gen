@@ -434,6 +434,8 @@ def analyze_distribution_quality(amounts, min_bound, max_bound, total_amount):
 def create_address_batches(addresses, amounts, max_bsv_per_batch, randomize=False):
     """
     Split addresses and amounts into batches based on maximum BSV per batch.
+    
+    Enhanced with variable batch sizes for improved privacy.
 
     Args:
         addresses (list): List of address dictionaries
@@ -465,12 +467,28 @@ def create_address_batches(addresses, amounts, max_bsv_per_batch, randomize=Fals
     batch_number = 1
 
     for address, amount in combined_data:
-        # Check if adding this amount would exceed the limit
-        if (
-            current_batch_total + amount > max_bsv_per_batch
-            and len(current_batch_addresses) > 0
-        ):
+        # Enhanced privacy: Use variable batch size instead of always max
+        # Create target batch size between 60%-95% of maximum (with some randomness)
+        if len(current_batch_addresses) == 0:
+            # First item in new batch - calculate variable target size
+            privacy_factor = Decimal(str(0.6 + (random.random() * 0.35)))  # 60-95%
+            current_target_size = max_bsv_per_batch * privacy_factor
+        else:
+            # Use the target size we calculated when starting this batch
+            pass
 
+        # Check if adding this amount would exceed the target (not max) for privacy
+        would_exceed_target = current_batch_total + amount > current_target_size
+        # But still respect the absolute maximum as a hard limit
+        would_exceed_max = current_batch_total + amount > max_bsv_per_batch
+        
+        # Decide whether to start a new batch
+        should_start_new_batch = (
+            len(current_batch_addresses) > 0 and 
+            (would_exceed_target or would_exceed_max)
+        )
+
+        if should_start_new_batch:
             # Save current batch
             batches.append(
                 {
@@ -482,11 +500,15 @@ def create_address_batches(addresses, amounts, max_bsv_per_batch, randomize=Fals
                 }
             )
 
-            # Start new batch
+            # Start new batch with new variable target size
             current_batch_addresses = []
             current_batch_amounts = []
             current_batch_total = Decimal("0")
             batch_number += 1
+            
+            # Calculate new target size for privacy variation
+            privacy_factor = Decimal(str(0.6 + (random.random() * 0.35)))  # 60-95%
+            current_target_size = max_bsv_per_batch * privacy_factor
 
         # Add to current batch
         current_batch_addresses.append(address)

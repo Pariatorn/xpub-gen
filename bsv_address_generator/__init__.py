@@ -3,7 +3,9 @@ BSV Address Derivation Tool Package
 A user-friendly package to derive BSV addresses from extended public keys.
 """
 
-__version__ = "2.1.0"
+from config import APP_VERSION
+
+__version__ = APP_VERSION
 __author__ = "BSV Address Generator"
 
 from .core.derivation import derive_addresses, validate_derivation_limits

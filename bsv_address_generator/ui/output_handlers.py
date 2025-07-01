@@ -10,6 +10,14 @@ from decimal import Decimal
 from PyQt6.QtWidgets import QFileDialog, QInputDialog, QMessageBox
 
 from ..core.distribution import create_address_batches
+from config import (
+    BSV_DUST_LIMIT, 
+    SATOSHIS_PER_BSV,
+    MIN_BATCH_REASONABLE,
+    DEFAULT_BATCH_SIZE,
+    MAX_BATCH_SIZE,
+    BATCH_MIN_MULTIPLIER,
+)
 
 
 def print_banner():
@@ -539,13 +547,27 @@ def batch_export(parent, addresses, amounts):
         )
         return
 
+    # Calculate reasonable minimum batch limit using config values
+    # Use dust limit as base, but ensure batch can contain meaningful amounts
+    dust_limit_bsv = Decimal(BSV_DUST_LIMIT) / SATOSHIS_PER_BSV
+    
+    # Find the minimum amount in the current distribution
+    min_amount_in_distribution = min(amounts)
+    
+    # Set minimum batch size to be at least BATCH_MIN_MULTIPLIER times the minimum distribution amount
+    # but no less than MIN_BATCH_REASONABLE (configured reasonable minimum)
+    min_batch_from_distribution = float(min_amount_in_distribution * Decimal(str(BATCH_MIN_MULTIPLIER)))
+    
+    # Use the larger of the two minimums (from config)
+    min_batch_limit = max(min_batch_from_distribution, MIN_BATCH_REASONABLE)
+
     max_bsv_per_batch, ok = QInputDialog.getDouble(
         parent,
         "Batch Export",
         "Maximum BSV per batch file:",
-        value=10.0,
-        min=0.1,
-        max=100000.0,
+        value=DEFAULT_BATCH_SIZE,
+        min=min_batch_limit,
+        max=MAX_BATCH_SIZE,
         decimals=8,
     )
 

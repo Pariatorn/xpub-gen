@@ -16,6 +16,19 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from config import (
+    BSV_DUST_LIMIT, 
+    SATOSHIS_PER_BSV,
+    MAX_BSV_AMOUNT,
+    MAX_ADDRESS_COUNT,
+    MAX_DERIVATION_INDEX,
+    DEFAULT_ADDRESS_COUNT,
+    DEFAULT_BSV_AMOUNT,
+    DEFAULT_MIN_RANDOM_AMOUNT,
+    DEFAULT_MAX_RANDOM_AMOUNT,
+)
+from decimal import Decimal
+
 
 class InputPanel(QScrollArea):
     """Widget for all user inputs."""
@@ -25,6 +38,11 @@ class InputPanel(QScrollArea):
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+        # Calculate dust limit in BSV for minimum values
+        self.dust_limit_bsv = Decimal(BSV_DUST_LIMIT) / SATOSHIS_PER_BSV
+        # Use dust limit + small buffer for minimum GUI values
+        self.min_bsv_amount = float(self.dust_limit_bsv * Decimal("1.1"))
 
         panel = QWidget()
         layout = QVBoxLayout(panel)
@@ -59,8 +77,8 @@ class InputPanel(QScrollArea):
 
         self.address_count = QSpinBox()
         self.address_count.setMinimum(1)
-        self.address_count.setMaximum(10000)
-        self.address_count.setValue(10)
+        self.address_count.setMaximum(MAX_ADDRESS_COUNT)
+        self.address_count.setValue(DEFAULT_ADDRESS_COUNT)
 
         count_layout.addWidget(QLabel("Generate:"))
         count_layout.addWidget(self.address_count)
@@ -75,7 +93,7 @@ class InputPanel(QScrollArea):
 
         self.manual_start_index = QSpinBox()
         self.manual_start_index.setMinimum(0)
-        self.manual_start_index.setMaximum(2147483647)  # BIP32 max index
+        self.manual_start_index.setMaximum(MAX_DERIVATION_INDEX)
         self.manual_start_index.setValue(0)
         self.manual_start_index.setSpecialValueText("Auto (continue from last)")
 
@@ -111,10 +129,10 @@ class InputPanel(QScrollArea):
         amount_layout = QHBoxLayout()
         amount_layout.addWidget(QLabel("Total amount:"))
         self.bsv_amount = QDoubleSpinBox()
-        self.bsv_amount.setMinimum(0.00000001)
-        self.bsv_amount.setMaximum(1000000.0)
+        self.bsv_amount.setMinimum(self.min_bsv_amount)  # Use dust limit + buffer
+        self.bsv_amount.setMaximum(float(MAX_BSV_AMOUNT))
         self.bsv_amount.setDecimals(8)
-        self.bsv_amount.setValue(1.0)
+        self.bsv_amount.setValue(DEFAULT_BSV_AMOUNT)
         amount_layout.addWidget(self.bsv_amount)
         amount_layout.addWidget(QLabel("BSV"))
         amount_layout.addStretch()
@@ -134,19 +152,19 @@ class InputPanel(QScrollArea):
 
         random_layout.addWidget(QLabel("Min amount:"), 0, 0)
         self.min_amount = QDoubleSpinBox()
-        self.min_amount.setMinimum(0.00000001)
-        self.min_amount.setMaximum(1000000.0)
+        self.min_amount.setMinimum(self.min_bsv_amount)  # Use dust limit + buffer
+        self.min_amount.setMaximum(float(MAX_BSV_AMOUNT))
         self.min_amount.setDecimals(8)
-        self.min_amount.setValue(0.01)
+        self.min_amount.setValue(DEFAULT_MIN_RANDOM_AMOUNT)
         random_layout.addWidget(self.min_amount, 0, 1)
         random_layout.addWidget(QLabel("BSV"), 0, 2)
 
         random_layout.addWidget(QLabel("Max amount:"), 1, 0)
         self.max_amount = QDoubleSpinBox()
-        self.max_amount.setMinimum(0.00000001)
-        self.max_amount.setMaximum(1000000.0)
+        self.max_amount.setMinimum(self.min_bsv_amount)  # Use dust limit + buffer
+        self.max_amount.setMaximum(float(MAX_BSV_AMOUNT))
         self.max_amount.setDecimals(8)
-        self.max_amount.setValue(0.1)
+        self.max_amount.setValue(DEFAULT_MAX_RANDOM_AMOUNT)
         random_layout.addWidget(self.max_amount, 1, 1)
         random_layout.addWidget(QLabel("BSV"), 1, 2)
 
