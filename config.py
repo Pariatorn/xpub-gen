@@ -37,4 +37,4 @@ DERIVATION_WARNING_THRESHOLD = 0.95  # Warning at 95% of maximum derivation inde
 SATOSHI_PRECISION = "0.00000001"  # 8 decimal places for satoshi precision
 
 # Version
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"

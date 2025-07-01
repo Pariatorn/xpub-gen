@@ -33,7 +33,7 @@ from ..core.distribution import (
     distribute_amounts_random,
     distribute_amounts_random_optimal,
 )
-from ..utils.state_manager import check_previous_state
+from ..utils.state_manager import check_previous_state, update_derivation_state_for_actual_usage
 from .widgets.input_panel import InputPanel
 from .widgets.results_panel import ResultsPanel
 from .workers.generation_worker import AddressGenerationWorker
@@ -433,10 +433,6 @@ class BSVAddressGeneratorGUI(QMainWindow):
 
             # Update derivation state if address count was reduced
             if len(self.addresses) < original_count:
-                from ..utils.state_manager import (
-                    update_derivation_state_for_actual_usage,
-                )
-
                 xpub = self.input_panel.xpub_input.toPlainText().strip()
                 base_path = self.get_derivation_path()
                 update_derivation_state_for_actual_usage(

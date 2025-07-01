@@ -19,6 +19,9 @@ from bsv_address_generator.core.distribution import (
     distribute_amounts_random,
     distribute_amounts_random_optimal,
 )
+from bsv_address_generator.utils.state_manager import (
+    update_derivation_state_for_actual_usage,
+)
 from bsv_address_generator.ui.input_handlers import (
     get_batch_randomization_preference,
     get_bsv_amount,
@@ -45,6 +48,26 @@ from bsv_address_generator.ui.output_handlers import (
     save_addresses_to_txt,
     save_batch_files,
 )
+
+
+def handle_address_truncation(addresses, actual_count, original_count, xpub, base_path):
+    """
+    Helper function to handle address list truncation and derivation state updates.
+    
+    Args:
+        addresses: List of address dictionaries
+        actual_count: Number of addresses actually used
+        original_count: Original number of addresses generated
+        xpub: Extended public key
+        base_path: Derivation path
+    
+    Returns:
+        Possibly truncated list of addresses
+    """
+    if actual_count < original_count:
+        addresses = addresses[:actual_count]
+        update_derivation_state_for_actual_usage(xpub, base_path, addresses)
+    return addresses
 
 
 def main():
@@ -93,16 +116,9 @@ def main():
                         total_amount, len(addresses)
                     )
                     # Update addresses list if count was reduced
-                    if actual_count < len(addresses):
-                        addresses = addresses[:actual_count]
-                        # Update derivation state for actual usage
-                        from bsv_address_generator.utils.state_manager import (
-                            update_derivation_state_for_actual_usage,
-                        )
-
-                        update_derivation_state_for_actual_usage(
-                            xpub, base_path, addresses
-                        )
+                    addresses = handle_address_truncation(
+                        addresses, actual_count, len(addresses), xpub, base_path
+                    )
                     display_distribution_summary(
                         total_amount, amounts, distribution_mode
                     )
@@ -122,16 +138,9 @@ def main():
                         final_count = distribution_info.get(
                             "final_address_count", len(addresses)
                         )
-                        if final_count < len(addresses):
-                            addresses = addresses[:final_count]
-                            # Update derivation state for actual usage
-                            from bsv_address_generator.utils.state_manager import (
-                                update_derivation_state_for_actual_usage,
-                            )
-
-                            update_derivation_state_for_actual_usage(
-                                xpub, base_path, addresses
-                            )
+                        addresses = handle_address_truncation(
+                            addresses, final_count, len(addresses), xpub, base_path
+                        )
                         min_amount = distribution_info["min_bound_used"]
                         max_amount = distribution_info["max_bound_used"]
 
@@ -157,16 +166,9 @@ def main():
                             total_amount, len(addresses), min_amount, max_amount
                         )
                         # Update addresses list if count was reduced
-                        if actual_count < len(addresses):
-                            addresses = addresses[:actual_count]
-                            # Update derivation state for actual usage
-                            from bsv_address_generator.utils.state_manager import (
-                                update_derivation_state_for_actual_usage,
-                            )
-
-                            update_derivation_state_for_actual_usage(
-                                xpub, base_path, addresses
-                            )
+                        addresses = handle_address_truncation(
+                            addresses, actual_count, len(addresses), xpub, base_path
+                        )
                         distribution_mode = "random"  # Update mode for display
                         display_distribution_summary(
                             total_amount,
@@ -184,16 +186,9 @@ def main():
                         total_amount, len(addresses), min_amount, max_amount
                     )
                     # Update addresses list if count was reduced
-                    if actual_count < len(addresses):
-                        addresses = addresses[:actual_count]
-                        # Update derivation state for actual usage
-                        from bsv_address_generator.utils.state_manager import (
-                            update_derivation_state_for_actual_usage,
-                        )
-
-                        update_derivation_state_for_actual_usage(
-                            xpub, base_path, addresses
-                        )
+                    addresses = handle_address_truncation(
+                        addresses, actual_count, len(addresses), xpub, base_path
+                    )
                     display_distribution_summary(
                         total_amount, amounts, distribution_mode, min_amount, max_amount
                     )
