@@ -248,7 +248,9 @@ class BSVAddressGeneratorGUI(QMainWindow):
                 max_val = float(avg * Decimal("2.0"))  # 200% of average
 
                 # Ensure minimum is above dust limit (using config value)
-                dust_limit_bsv = float(Decimal(BSV_DUST_LIMIT) / SATOSHIS_PER_BSV * Decimal("1.1"))  # dust limit + 10% buffer
+                dust_limit_bsv = float(
+                    Decimal(BSV_DUST_LIMIT) / SATOSHIS_PER_BSV * Decimal("1.1")
+                )  # dust limit + 10% buffer
                 min_val = max(min_val, dust_limit_bsv)
 
                 self.input_panel.min_amount.setValue(min_val)
@@ -285,8 +287,13 @@ class BSVAddressGeneratorGUI(QMainWindow):
 
         try:
             if mode == "Equal distribution":
-                amounts = distribute_amounts_equal(total_amount, count)
+                amounts, actual_count = distribute_amounts_equal(total_amount, count)
                 preview_text += f"Amount per address: {amounts[0]} BSV\n"
+                if actual_count != count:
+                    preview_text += (
+                        f"⚠️  Address count reduced to {actual_count} "
+                        "(dust limit compliance)\n"
+                    )
 
             elif mode == "Random distribution":
                 min_amt = Decimal(str(self.input_panel.min_amount.value()))
@@ -305,6 +312,14 @@ class BSVAddressGeneratorGUI(QMainWindow):
                     f"Average amount: {dist_info['average_amount']:.8f} BSV\n"
                 )
                 preview_text += f"Variation: {dist_info['variation_percent']:.1f}%\n"
+
+                # Check if address count was adjusted
+                feasible_count = dist_info.get("feasible_address_count", count)
+                if feasible_count != count:
+                    preview_text += (
+                        f"⚠️  Address count will be reduced to {feasible_count} "
+                        "(dust limit compliance)\n"
+                    )
 
             self.results_panel.preview_text.setPlainText(preview_text)
             self.results_panel.results_tabs.setCurrentIndex(0)  # Switch to preview tab
@@ -368,6 +383,7 @@ class BSVAddressGeneratorGUI(QMainWindow):
     def on_generation_completed(self, addresses):
         """Handle completed address generation."""
         self.addresses = addresses
+        original_count = len(addresses)
 
         # Generate amounts based on distribution mode
         total_amount = Decimal(str(self.input_panel.bsv_amount.value()))
@@ -375,18 +391,56 @@ class BSVAddressGeneratorGUI(QMainWindow):
 
         try:
             if mode == "Equal distribution":
-                self.amounts = distribute_amounts_equal(total_amount, len(addresses))
+                self.amounts, actual_count = distribute_amounts_equal(
+                    total_amount, len(addresses)
+                )
+                # Update addresses list if count was reduced
+                if actual_count < len(addresses):
+                    self.addresses = addresses[:actual_count]
+                    print(
+                        f"ℹ️  Address count reduced to {actual_count} "
+                        "for equal distribution"
+                    )
 
             elif mode == "Random distribution":
                 min_amt = Decimal(str(self.input_panel.min_amount.value()))
                 max_amt = Decimal(str(self.input_panel.max_amount.value()))
-                self.amounts = distribute_amounts_random(
+                self.amounts, actual_count = distribute_amounts_random(
                     total_amount, len(addresses), min_amt, max_amt
                 )
+                # Update addresses list if count was reduced
+                if actual_count < len(addresses):
+                    self.addresses = addresses[:actual_count]
+                    print(
+                        f"ℹ️  Address count reduced to {actual_count} "
+                        "for random distribution"
+                    )
 
             elif mode == "Smart random distribution":
                 self.amounts, self.distribution_info = (
                     distribute_amounts_random_optimal(total_amount, len(addresses))
+                )
+                # Update addresses list if count was reduced
+                final_count = self.distribution_info.get(
+                    "final_address_count", len(addresses)
+                )
+                if final_count < len(addresses):
+                    self.addresses = addresses[:final_count]
+                    print(
+                        f"ℹ️  Address count reduced to {final_count} "
+                        "for smart distribution"
+                    )
+
+            # Update derivation state if address count was reduced
+            if len(self.addresses) < original_count:
+                from ..utils.state_manager import (
+                    update_derivation_state_for_actual_usage,
+                )
+
+                xpub = self.input_panel.xpub_input.toPlainText().strip()
+                base_path = self.get_derivation_path()
+                update_derivation_state_for_actual_usage(
+                    xpub, base_path, self.addresses
                 )
 
             # Update table
@@ -395,9 +449,16 @@ class BSVAddressGeneratorGUI(QMainWindow):
             # Switch to addresses tab
             self.results_panel.results_tabs.setCurrentIndex(1)
 
-            self.statusBar().showMessage(
-                f"Successfully generated {len(addresses)} addresses"
-            )
+            final_count = len(self.addresses)
+            if final_count < original_count:
+                self.statusBar().showMessage(
+                    f"Generated {original_count} addresses, using {final_count} "
+                    "(reduced for dust limit compliance)"
+                )
+            else:
+                self.statusBar().showMessage(
+                    f"Successfully generated {final_count} addresses"
+                )
 
         except Exception as e:
             QMessageBox.critical(
@@ -472,7 +533,6 @@ def main():
 
     # Create and show main window
     window = BSVAddressGeneratorGUI()
-    window.load_example_xpub()
     window.show()
 
     sys.exit(app.exec())

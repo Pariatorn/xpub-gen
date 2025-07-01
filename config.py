@@ -20,7 +20,9 @@ DEFAULT_MIN_RANDOM_AMOUNT = 0.01  # Default minimum amount for random distributi
 DEFAULT_MAX_RANDOM_AMOUNT = 0.1  # Default maximum amount for random distribution
 
 # Batch Export Configuration
-MIN_BATCH_REASONABLE = 0.001  # Minimum reasonable batch size (0.001 BSV ~180x dust limit)
+MIN_BATCH_REASONABLE = (
+    0.001  # Minimum reasonable batch size (0.001 BSV ~180x dust limit)
+)
 DEFAULT_BATCH_SIZE = 10.0  # Default maximum BSV per batch file
 MAX_BATCH_SIZE = 100000.0  # Maximum allowable batch size
 BATCH_MIN_MULTIPLIER = 10  # Multiplier for minimum distribution amount (10x)

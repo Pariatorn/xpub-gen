@@ -37,7 +37,6 @@ from bsv_address_generator.ui.output_handlers import (
     display_batch_analysis,
     display_batch_completion_message,
     display_completion_message,
-    display_distribution_preview,
     display_distribution_summary,
     display_smart_distribution_benefits,
     display_success_message,
@@ -90,7 +89,20 @@ def main():
 
                 # Generate amounts based on distribution mode
                 if distribution_mode == "equal":
-                    amounts = distribute_amounts_equal(total_amount, len(addresses))
+                    amounts, actual_count = distribute_amounts_equal(
+                        total_amount, len(addresses)
+                    )
+                    # Update addresses list if count was reduced
+                    if actual_count < len(addresses):
+                        addresses = addresses[:actual_count]
+                        # Update derivation state for actual usage
+                        from bsv_address_generator.utils.state_manager import (
+                            update_derivation_state_for_actual_usage,
+                        )
+
+                        update_derivation_state_for_actual_usage(
+                            xpub, base_path, addresses
+                        )
                     display_distribution_summary(
                         total_amount, amounts, distribution_mode
                     )
@@ -106,6 +118,20 @@ def main():
                         amounts, distribution_info = distribute_amounts_random_optimal(
                             total_amount, len(addresses)
                         )
+                        # Update addresses list if count was reduced
+                        final_count = distribution_info.get(
+                            "final_address_count", len(addresses)
+                        )
+                        if final_count < len(addresses):
+                            addresses = addresses[:final_count]
+                            # Update derivation state for actual usage
+                            from bsv_address_generator.utils.state_manager import (
+                                update_derivation_state_for_actual_usage,
+                            )
+
+                            update_derivation_state_for_actual_usage(
+                                xpub, base_path, addresses
+                            )
                         min_amount = distribution_info["min_bound_used"]
                         max_amount = distribution_info["max_bound_used"]
 
@@ -127,9 +153,20 @@ def main():
                         min_amount, max_amount = get_random_distribution_params(
                             total_amount, len(addresses)
                         )
-                        amounts = distribute_amounts_random(
+                        amounts, actual_count = distribute_amounts_random(
                             total_amount, len(addresses), min_amount, max_amount
                         )
+                        # Update addresses list if count was reduced
+                        if actual_count < len(addresses):
+                            addresses = addresses[:actual_count]
+                            # Update derivation state for actual usage
+                            from bsv_address_generator.utils.state_manager import (
+                                update_derivation_state_for_actual_usage,
+                            )
+
+                            update_derivation_state_for_actual_usage(
+                                xpub, base_path, addresses
+                            )
                         distribution_mode = "random"  # Update mode for display
                         display_distribution_summary(
                             total_amount,
@@ -139,19 +176,24 @@ def main():
                             max_amount,
                         )
 
-                else:  # manual random
+                else:  # random distribution
                     min_amount, max_amount = get_random_distribution_params(
                         total_amount, len(addresses)
                     )
-
-                    # Show preview of manual distribution
-                    display_distribution_preview(
-                        distribution_mode, min_amount, max_amount
-                    )
-
-                    amounts = distribute_amounts_random(
+                    amounts, actual_count = distribute_amounts_random(
                         total_amount, len(addresses), min_amount, max_amount
                     )
+                    # Update addresses list if count was reduced
+                    if actual_count < len(addresses):
+                        addresses = addresses[:actual_count]
+                        # Update derivation state for actual usage
+                        from bsv_address_generator.utils.state_manager import (
+                            update_derivation_state_for_actual_usage,
+                        )
+
+                        update_derivation_state_for_actual_usage(
+                            xpub, base_path, addresses
+                        )
                     display_distribution_summary(
                         total_amount, amounts, distribution_mode, min_amount, max_amount
                     )

@@ -9,6 +9,88 @@ from decimal import ROUND_DOWN, Decimal
 from config import BSV_DUST_LIMIT, SATOSHI_PRECISION, SATOSHIS_PER_BSV
 
 
+def is_above_dust_limit(amount):
+    """
+    Check if an amount is above the BSV dust limit.
+
+    Args:
+        amount (Decimal): Amount to check
+
+    Returns:
+        bool: True if amount is above dust limit
+    """
+    dust_limit_bsv = Decimal(BSV_DUST_LIMIT) / SATOSHIS_PER_BSV
+    return amount > dust_limit_bsv
+
+
+def get_minimum_viable_amount():
+    """
+    Get the minimum viable amount (dust limit + small buffer).
+
+    Returns:
+        Decimal: Minimum viable amount in BSV
+    """
+    dust_limit_bsv = Decimal(BSV_DUST_LIMIT) / SATOSHIS_PER_BSV
+    return dust_limit_bsv * Decimal("1.1")  # 10% buffer above dust limit
+
+
+def calculate_optimal_address_count(total_amount, max_addresses=None):
+    """
+    Calculate the optimal number of addresses for a given total amount.
+
+    Args:
+        total_amount (Decimal): Total BSV amount to distribute
+        max_addresses (int, optional): Maximum number of addresses allowed
+
+    Returns:
+        int: Optimal number of addresses
+    """
+    min_viable_amount = get_minimum_viable_amount()
+
+    # Calculate maximum possible addresses that can receive viable amounts
+    max_possible = int(total_amount / min_viable_amount)
+
+    if max_addresses is not None:
+        return min(max_possible, max_addresses)
+
+    return max_possible
+
+
+def validate_distribution_feasibility(total_amount, address_count, min_amount=None):
+    """
+    Validate if distribution is feasible with given parameters.
+
+    Args:
+        total_amount (Decimal): Total BSV amount
+        address_count (int): Number of addresses
+        min_amount (Decimal, optional): Minimum amount per address
+
+    Returns:
+        tuple: (is_feasible, error_message, suggested_address_count)
+    """
+    min_viable = get_minimum_viable_amount()
+
+    # Use provided min_amount or minimum viable amount
+    effective_min = max(min_amount or min_viable, min_viable)
+
+    # Check if we have enough total amount
+    min_total_required = effective_min * address_count
+
+    if min_total_required > total_amount:
+        # Calculate how many addresses we can actually support
+        suggested_count = calculate_optimal_address_count(total_amount)
+
+        return (
+            False,
+            f"Cannot distribute {total_amount} BSV across {address_count} addresses. "
+            f"Minimum required: {min_total_required} BSV. "
+            f"Suggested address count: {suggested_count}",
+            suggested_count,
+        )
+
+    return True, None, address_count
+
+
 def calculate_optimal_random_bounds(total_amount, address_count):
     """
     Calculate optimal min/max bounds for random distribution.
@@ -26,14 +108,22 @@ def calculate_optimal_random_bounds(total_amount, address_count):
     Returns:
         tuple: (min_amount, max_amount, distribution_info)
     """
+    # First validate if distribution is feasible
+    is_feasible, error_msg, suggested_count = validate_distribution_feasibility(
+        total_amount, address_count
+    )
+
+    if not is_feasible:
+        # Use suggested count instead
+        address_count = suggested_count
+
     # Calculate average amount per address
     avg_amount = total_amount / address_count
 
-    # Minimum bound: max of dust limit + buffer or 25% of average
-    dust_limit_bsv = Decimal(BSV_DUST_LIMIT) / SATOSHIS_PER_BSV
-    min_from_dust = dust_limit_bsv * Decimal("1.1")  # 10% buffer above dust
+    # Minimum bound: always above dust limit
+    min_viable = get_minimum_viable_amount()
     min_from_avg = avg_amount * Decimal("0.25")  # 25% of average
-    min_amount = max(min_from_dust, min_from_avg)
+    min_amount = max(min_viable, min_from_avg)
 
     # Maximum bound: ensure we can distribute without excessive remainder
     # Use 175% of average, but ensure constraints are satisfied
@@ -54,7 +144,9 @@ def calculate_optimal_random_bounds(total_amount, address_count):
         "variation_percent": variation_percent,
         "min_percent_of_avg": (min_amount / avg_amount) * 100,
         "max_percent_of_avg": (max_amount / avg_amount) * 100,
-        "dust_limit_bsv": dust_limit_bsv,
+        "dust_limit_bsv": min_viable,
+        "feasible_address_count": address_count,
+        "original_address_count": address_count,
     }
 
     return min_amount, max_amount, distribution_info
@@ -145,21 +237,40 @@ def _validate_and_adjust_bounds(
 def distribute_amounts_equal(total_amount, address_count):
     """
     Distribute amount equally across addresses.
+    Automatically reduces address count if needed to respect dust limits.
 
     Args:
         total_amount (Decimal): Total BSV amount to distribute
-        address_count (int): Number of addresses
+        address_count (int): Requested number of addresses
 
     Returns:
-        list: List of Decimal amounts per address
+        tuple: (amounts_list, actual_address_count_used)
     """
-    amount_per_address = total_amount / address_count
-    # Round down to 8 decimal places (satoshi precision)
+    # Validate feasibility and get optimal address count
+    is_feasible, error_msg, suggested_count = validate_distribution_feasibility(
+        total_amount, address_count
+    )
+
+    # Use the feasible address count
+    actual_count = suggested_count
+
+    if actual_count != address_count:
+        print(
+            (
+                f"ℹ️  Reduced address count from {address_count} to {actual_count} "
+                "to respect dust limits"
+            )
+        )
+
+    # Calculate amount per address
+    amount_per_address = total_amount / actual_count
+
+    # Round down to satoshi precision
     amount_per_address = amount_per_address.quantize(
         Decimal(SATOSHI_PRECISION), rounding=ROUND_DOWN
     )
 
-    amounts = [amount_per_address] * address_count
+    amounts = [amount_per_address] * actual_count
 
     # Handle any remaining dust by adding to the first address
     distributed_total = sum(amounts)
@@ -167,12 +278,13 @@ def distribute_amounts_equal(total_amount, address_count):
     if remainder > 0:
         amounts[0] += remainder
 
-    return amounts
+    return amounts, actual_count
 
 
 def distribute_amounts_random(total_amount, address_count, min_amount, max_amount):
     """
     Distribute amount randomly within specified range.
+    Ensures all amounts are above dust limit and no negative amounts.
 
     Args:
         total_amount (Decimal): Total BSV amount to distribute
@@ -181,20 +293,50 @@ def distribute_amounts_random(total_amount, address_count, min_amount, max_amoun
         max_amount (Decimal): Maximum amount per address
 
     Returns:
-        list: List of random Decimal amounts per address
+        tuple: (amounts_list, actual_address_count_used)
     """
+    # Ensure min_amount is above dust limit
+    min_viable = get_minimum_viable_amount()
+    min_amount = max(min_amount, min_viable)
+
+    # Validate feasibility
+    is_feasible, error_msg, suggested_count = validate_distribution_feasibility(
+        total_amount, address_count, min_amount
+    )
+
+    # Use the feasible address count
+    actual_count = suggested_count
+
+    if actual_count != address_count:
+        print(
+            f"ℹ️  Reduced address count from {address_count} to {actual_count} "
+            "for random distribution"
+        )
+
+    # Recalculate max_amount if needed to ensure feasibility
+    avg_amount = total_amount / actual_count
+    if max_amount > avg_amount * Decimal("2.0"):
+        max_amount = avg_amount * Decimal("1.8")  # Conservative maximum
+        print(
+            (
+                f"ℹ️  Adjusted maximum amount to {max_amount} BSV to ensure "
+                "feasible distribution"
+            )
+        )
+
     amounts = []
     remaining = total_amount
 
-    for i in range(address_count - 1):
+    for i in range(actual_count - 1):
         # Calculate maximum possible for this address (leaving enough for remaining)
-        remaining_addresses = address_count - i - 1
+        remaining_addresses = actual_count - i - 1
         max_for_remaining = remaining - (min_amount * remaining_addresses)
 
         # Actual maximum for this address
         actual_max = min(max_amount, max_for_remaining)
         actual_min = min_amount
 
+        # Ensure we have a valid range
         if actual_max <= actual_min:
             amount = actual_min
         else:
@@ -207,15 +349,27 @@ def distribute_amounts_random(total_amount, address_count, min_amount, max_amoun
         amounts.append(amount)
         remaining -= amount
 
-    # Last address gets the remainder
-    amounts.append(remaining)
+    # Last address gets the remainder - ensure it's above dust limit
+    final_amount = remaining
+    if final_amount < min_viable:
+        # Redistribute some amount from previous addresses
+        needed = min_viable - final_amount
+        for i in range(len(amounts) - 1, -1, -1):
+            if amounts[i] > min_amount + needed:
+                amounts[i] -= needed
+                final_amount += needed
+                break
 
-    # Verify total matches (should be exact due to decimal arithmetic)
-    if sum(amounts) != total_amount:
-        # Adjust the last amount if there's a tiny discrepancy
-        amounts[-1] = total_amount - sum(amounts[:-1])
+    amounts.append(final_amount)
 
-    return amounts
+    # Final validation - ensure no negative or dust amounts
+    for i, amount in enumerate(amounts):
+        if amount < min_viable:
+            print(
+                f"⚠️  Warning: Address {i} amount {amount} below minimum viable amount"
+            )
+
+    return amounts, actual_count
 
 
 def distribute_amounts_random_smart(
@@ -223,9 +377,7 @@ def distribute_amounts_random_smart(
 ):
     """
     Improved random distribution that prevents excessive last address amounts.
-
-    Uses a smarter algorithm that distributes more conservatively to ensure
-    the last address doesn't get an excessive remainder.
+    Includes dust limit protection and negative amount prevention.
 
     Args:
         total_amount (Decimal): Total BSV amount to distribute
@@ -234,20 +386,44 @@ def distribute_amounts_random_smart(
         max_amount (Decimal): Maximum amount per address
 
     Returns:
-        list: List of random Decimal amounts per address
+        tuple: (amounts_list, actual_address_count_used)
     """
+    # Ensure min_amount is above dust limit
+    min_viable = get_minimum_viable_amount()
+    min_amount = max(min_amount, min_viable)
+
+    # Validate feasibility
+    is_feasible, error_msg, suggested_count = validate_distribution_feasibility(
+        total_amount, address_count, min_amount
+    )
+
+    # Use the feasible address count
+    actual_count = suggested_count
+
+    if actual_count != address_count:
+        print(
+            (
+                f"ℹ️  Reduced address count from {address_count} to {actual_count} "
+                "for smart distribution"
+            )
+        )
+
     amounts = []
     remaining = total_amount
 
     # Calculate target amount for last address (should be within reasonable bounds)
     target_last_amount = max_amount * Decimal("1.1")  # Allow 10% over max
 
-    for i in range(address_count):
-        remaining_addresses = address_count - i
+    for i in range(actual_count):
+        remaining_addresses = actual_count - i
 
         if remaining_addresses == 1:
-            # Last address gets whatever is left
-            amounts.append(remaining)
+            # Last address gets whatever is left (ensure it's above dust limit)
+            final_amount = remaining
+            if final_amount < min_viable:
+                # This shouldn't happen with proper validation, but safety check
+                final_amount = min_viable
+            amounts.append(final_amount)
             break
 
         # Calculate constraints for this address
@@ -278,22 +454,17 @@ def distribute_amounts_random_smart(
         amounts.append(amount)
         remaining -= amount
 
-    # Verify total matches (should be exact due to decimal arithmetic)
-    total_distributed = sum(amounts)
-    if total_distributed != total_amount:
-        # Adjust the last amount if there's a discrepancy
-        amounts[-1] = total_amount - sum(amounts[:-1])
-
-    return amounts
+    return amounts, actual_count
 
 
 def distribute_amounts_random_optimal(total_amount, address_count):
     """
     Distribute amount randomly using automatically calculated optimal bounds.
+    Includes automatic address count optimization.
 
     Args:
         total_amount (Decimal): Total BSV amount to distribute
-        address_count (int): Number of addresses
+        address_count (int): Requested number of addresses
 
     Returns:
         tuple: (amounts_list, distribution_info)
@@ -302,9 +473,12 @@ def distribute_amounts_random_optimal(total_amount, address_count):
         total_amount, address_count
     )
 
+    # Get the actual feasible address count
+    actual_count = distribution_info["feasible_address_count"]
+
     # Use the improved smart distribution algorithm
-    amounts = distribute_amounts_random_smart(
-        total_amount, address_count, min_amount, max_amount
+    amounts, final_count = distribute_amounts_random_smart(
+        total_amount, actual_count, min_amount, max_amount
     )
 
     # Add actual distribution statistics
@@ -315,6 +489,7 @@ def distribute_amounts_random_optimal(total_amount, address_count):
             "actual_avg": sum(amounts) / len(amounts),
             "min_bound_used": min_amount,
             "max_bound_used": max_amount,
+            "final_address_count": final_count,
         }
     )
 
@@ -334,11 +509,12 @@ def validate_distribution_params(total_amount, address_count, min_amount, max_am
     Returns:
         tuple: (is_valid, error_message)
     """
-    # Check if maximum amount exceeds total
-    if max_amount >= total_amount:
+    # Check dust limit compliance
+    min_viable = get_minimum_viable_amount()
+    if min_amount < min_viable:
         return (
             False,
-            f"Maximum amount must be less than total amount ({total_amount} BSV).",
+            f"Minimum amount must be at least {min_viable} BSV (above dust limit).",
         )
 
     # Check if minimum is greater than maximum
@@ -348,16 +524,20 @@ def validate_distribution_params(total_amount, address_count, min_amount, max_am
             f"Maximum amount must be greater than minimum amount ({min_amount} BSV).",
         )
 
-    # Check if minimum total exceeds available amount
-    min_total = min_amount * address_count
-    if min_total > total_amount:
+    # Check if maximum amount exceeds total
+    if max_amount >= total_amount:
         return (
             False,
-            (
-                f"Minimum total ({min_total} BSV) exceeds total amount "
-                f"({total_amount} BSV)."
-            ),
+            f"Maximum amount must be less than total amount ({total_amount} BSV).",
         )
+
+    # Use the comprehensive feasibility check
+    is_feasible, error_msg, suggested_count = validate_distribution_feasibility(
+        total_amount, address_count, min_amount
+    )
+
+    if not is_feasible:
+        return False, error_msg
 
     # Check if maximum total is less than available amount
     max_total = max_amount * address_count
@@ -367,18 +547,6 @@ def validate_distribution_params(total_amount, address_count, min_amount, max_am
             (
                 f"Maximum total ({max_total} BSV) is less than total amount "
                 f"({total_amount} BSV)."
-            ),
-        )
-
-    # Check dust limit
-    min_sats = int(min_amount * SATOSHIS_PER_BSV)
-    if min_sats <= BSV_DUST_LIMIT:
-        min_dust_bsv = Decimal(BSV_DUST_LIMIT) / SATOSHIS_PER_BSV
-        return (
-            False,
-            (
-                f"Minimum amount must be greater than {min_dust_bsv} BSV "
-                f"({BSV_DUST_LIMIT} satoshis)."
             ),
         )
 
@@ -434,7 +602,7 @@ def analyze_distribution_quality(amounts, min_bound, max_bound, total_amount):
 def create_address_batches(addresses, amounts, max_bsv_per_batch, randomize=False):
     """
     Split addresses and amounts into batches based on maximum BSV per batch.
-    
+
     Enhanced with variable batch sizes for improved privacy.
 
     Args:
@@ -481,11 +649,10 @@ def create_address_batches(addresses, amounts, max_bsv_per_batch, randomize=Fals
         would_exceed_target = current_batch_total + amount > current_target_size
         # But still respect the absolute maximum as a hard limit
         would_exceed_max = current_batch_total + amount > max_bsv_per_batch
-        
+
         # Decide whether to start a new batch
-        should_start_new_batch = (
-            len(current_batch_addresses) > 0 and 
-            (would_exceed_target or would_exceed_max)
+        should_start_new_batch = len(current_batch_addresses) > 0 and (
+            would_exceed_target or would_exceed_max
         )
 
         if should_start_new_batch:
@@ -505,7 +672,7 @@ def create_address_batches(addresses, amounts, max_bsv_per_batch, randomize=Fals
             current_batch_amounts = []
             current_batch_total = Decimal("0")
             batch_number += 1
-            
+
             # Calculate new target size for privacy variation
             privacy_factor = Decimal(str(0.6 + (random.random() * 0.35)))  # 60-95%
             current_target_size = max_bsv_per_batch * privacy_factor

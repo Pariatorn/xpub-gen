@@ -53,6 +53,33 @@ def save_derivation_state(xpub_fingerprint, last_index, base_path):
         print(f"Warning: Could not save derivation state: {e}")
 
 
+def update_derivation_state_for_actual_usage(
+    xpub_str, base_path, actual_addresses_used
+):
+    """
+    Update derivation state to reflect only the addresses actually used.
+
+    This is called after distribution reduces the address count, ensuring
+    the next generation continues from the correct index.
+
+    Args:
+        xpub_str (str): Extended public key string
+        base_path (str): Base derivation path
+        actual_addresses_used (list): List of actual address dictionaries used
+    """
+    if not actual_addresses_used:
+        return
+
+    # Get the last actually used index
+    last_used_index = actual_addresses_used[-1]["index"]
+    xpub_fingerprint = get_xpub_fingerprint(xpub_str)
+
+    # Update the derivation state with the correct last used index
+    save_derivation_state(xpub_fingerprint, last_used_index, base_path)
+
+    print(f"ℹ️  Updated derivation state: last used index = {last_used_index}")
+
+
 def load_derivation_state():
     """
     Load the last derivation state.

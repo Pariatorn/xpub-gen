@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -17,17 +19,16 @@ from PyQt6.QtWidgets import (
 )
 
 from config import (
-    BSV_DUST_LIMIT, 
-    SATOSHIS_PER_BSV,
-    MAX_BSV_AMOUNT,
-    MAX_ADDRESS_COUNT,
-    MAX_DERIVATION_INDEX,
+    BSV_DUST_LIMIT,
     DEFAULT_ADDRESS_COUNT,
     DEFAULT_BSV_AMOUNT,
-    DEFAULT_MIN_RANDOM_AMOUNT,
     DEFAULT_MAX_RANDOM_AMOUNT,
+    DEFAULT_MIN_RANDOM_AMOUNT,
+    MAX_ADDRESS_COUNT,
+    MAX_BSV_AMOUNT,
+    MAX_DERIVATION_INDEX,
+    SATOSHIS_PER_BSV,
 )
-from decimal import Decimal
 
 
 class InputPanel(QScrollArea):
