@@ -33,7 +33,10 @@ from ..core.distribution import (
     distribute_amounts_random,
     distribute_amounts_random_optimal,
 )
-from ..utils.state_manager import check_previous_state, update_derivation_state_for_actual_usage
+from ..utils.state_manager import (
+    check_previous_state,
+    update_derivation_state_for_actual_usage,
+)
 from .widgets.input_panel import InputPanel
 from .widgets.results_panel import ResultsPanel
 from .workers.generation_worker import AddressGenerationWorker
